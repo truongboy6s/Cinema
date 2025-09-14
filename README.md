@@ -4,13 +4,8 @@
 
 **Cinema** là một ứng dụng web hiện đại được thiết kế để mang lại trải nghiệm đặt vé xem phim trực tuyến hoàn hảo. Với giao diện người dùng trực quan, hiệu suất cao và các tính năng thông minh, Cinema giúp người dùng dễ dàng khám phá, lựa chọn và đặt vé xem phim chỉ trong vài bước đơn giản.
 
-[![React](https://img.shields.io/badge/React-18.2.0-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://reactjs.org/)
-[![Vite](https://img.shields.io/badge/Vite-4.4.5-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3.0-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-
-🔗 **Repository**: [github.com/21dh113775/Cinema.git](https://github.com/21dh113775/Cinema.git)  
-🚀 **Live Demo**: [cinema-jade-xi.vercel.app](https://cinema-jade-xi.vercel.app)
+🔗 **Repository**: 
+🚀 **Live Demo**: 
 
 </div>
 
@@ -42,24 +37,6 @@
 - **Phân loại thể loại**: Lọc phim theo thể loại (Hành động, Tình cảm, Kinh dị, ...)
 - **Tìm kiếm thông minh**: Tìm kiếm phim theo tên, diễn viên, đạo diễn
 - **Đánh giá và nhận xét**: Xem đánh giá từ người dùng khác
-
-### 🎬 Trải Nghiệm Trailer
-```javascript
-// Tích hợp YouTube API để phát trailer
-const TrailerPlayer = ({ videoId }) => {
-  const opts = {
-    height: '315',
-    width: '560',
-    playerVars: {
-      autoplay: 1,
-      modestbranding: 1,
-      rel: 0
-    }
-  };
-  
-  return <YouTube videoId={videoId} opts={opts} />;
-};
-```
 
 ### 🎟️ Hệ Thống Đặt Vé
 - **Chọn suất chiếu**: Lựa chọn thời gian và ngày chiếu phù hợp
@@ -176,7 +153,7 @@ Cinema/
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/21dh113775/Cinema.git
+
 cd Cinema
 ```
 
@@ -456,23 +433,6 @@ vercel
 vercel --prod
 ```
 
-### Docker Deployment
-```dockerfile
-# Dockerfile
-FROM node:18-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY . .
-RUN npm run build
-
-EXPOSE 5173
-
-CMD ["npm", "run", "preview"]
-```
 
 ### Environment-specific Builds
 ```bash
@@ -532,35 +492,8 @@ Khi báo cáo bug, vui lòng bao gồm:
 
 ---
 
-## 📄 Giấy Phép
-
-Dự án này được phát hành dưới giấy phép [MIT License](LICENSE).
-
-```
-MIT License
-
-Copyright (c) 2024 Cinema Project
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-```
-
----
-
-## 👥 Tác Giả
-
-**Lê Trần Đăng Khoa** - *Initial work* - [21dh113775](https://github.com/21dh113775)
 
 ## 🙏 Lời Cảm Ơn
-
-- [YouTube Data API](https://developers.google.com/youtube/v3) - Cung cấp dữ liệu trailer phim
 - [React Team](https://reactjs.org/) - Framework tuyệt vời cho frontend
 - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
 - [Vercel](https://vercel.com/) - Platform triển khai đáng tin cậy
