@@ -38,24 +38,6 @@
 - **Tìm kiếm thông minh**: Tìm kiếm phim theo tên, diễn viên, đạo diễn
 - **Đánh giá và nhận xét**: Xem đánh giá từ người dùng khác
 
-### 🎬 Trải Nghiệm Trailer
-```javascript
-// Tích hợp YouTube API để phát trailer
-const TrailerPlayer = ({ videoId }) => {
-  const opts = {
-    height: '315',
-    width: '560',
-    playerVars: {
-      autoplay: 1,
-      modestbranding: 1,
-      rel: 0
-    }
-  };
-  
-  return <YouTube videoId={videoId} opts={opts} />;
-};
-```
-
 ### 🎟️ Hệ Thống Đặt Vé
 - **Chọn suất chiếu**: Lựa chọn thời gian và ngày chiếu phù hợp
 - **Sơ đồ ghế tương tác**: Giao diện trực quan để chọn ghế ngồi
