@@ -26,15 +26,18 @@ const FeatueredSection = () => {
   };
 
   return (
-    <div className="px-6 md:px-16 lg:px-24 xl:px-44 overflow-hidden">
+    <div className="px-6 md:px-16 lg:px-24 xl:px-44 overflow-hidden bg-gradient-to-b from-black to-slate-900">
       <div className="relative flex items-center justify-between pt-20 pb-10">
         <BlurCircle top="0" right="-80px" />
-        <p className="text-gray-300 font-medium text-lg">Now Showing</p>
+        <div className="flex items-center gap-3">
+          <div className="w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-pulse"></div>
+          <p className="text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text font-bold text-xl">Phim Đang Chiếu</p>
+        </div>
         <button
           onClick={() => navigate('/movies')}
-          className="group flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors cursor-pointer"
+          className="group flex items-center gap-2 text-sm text-gray-300 hover:text-cyan-400 transition-colors cursor-pointer glass px-4 py-2 rounded-full border border-cyan-500/20"
         >
-          View All
+          Xem Tất Cả
           <ArrowRight className="group-hover:translate-x-1 transition-transform w-4 h-4" />
         </button>
       </div>
@@ -43,7 +46,7 @@ const FeatueredSection = () => {
         {/* Left Button */}
         <button
           onClick={() => scroll('left')}
-          className="absolute left-0 top-1/2 -translate-y-1/2 bg-gray-800/70 text-white p-2 rounded-full hover:bg-gray-800 transition z-10 shadow-md disabled:opacity-50"
+          className="absolute left-0 top-1/2 -translate-y-1/2 glass border border-cyan-500/30 text-cyan-400 p-3 rounded-full hover:border-cyan-500/50 hover:bg-cyan-500/10 transition z-10 shadow-lg disabled:opacity-50"
           aria-label="Cuộn trái"
           disabled={scrollRef.current?.scrollLeft <= 0}
         >
@@ -66,7 +69,7 @@ const FeatueredSection = () => {
         {/* Right Button */}
         <button
           onClick={() => scroll('right')}
-          className="absolute right-0 top-1/2 -translate-y-1/2 bg-gray-800/70 text-white p-2 rounded-full hover:bg-gray-800 transition z-10 shadow-md disabled:opacity-50"
+          className="absolute right-0 top-1/2 -translate-y-1/2 glass border border-cyan-500/30 text-cyan-400 p-3 rounded-full hover:border-cyan-500/50 hover:bg-cyan-500/10 transition z-10 shadow-lg disabled:opacity-50"
           aria-label="Cuộn phải"
           disabled={scrollRef.current?.scrollLeft >= (dummyShowsData.length - 4) * 272}
         >

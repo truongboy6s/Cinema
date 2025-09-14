@@ -15,13 +15,14 @@ import {
   LogIn,
   ChevronDown
 } from 'lucide-react';
-import { useClerk, UserButton, useUser } from '@clerk/clerk-react';
+import { useAuth } from '../contexts/AuthContext';
+import UserProfile from './UserProfile';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { user } = useUser();
-  const { openSignIn } = useClerk();
+  const [showUserProfile, setShowUserProfile] = useState(false);
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -91,7 +92,7 @@ const Navbar = () => {
       {/* Main Navbar */}
       <nav className={`fixed top-0 left-0 z-50 w-full transition-all duration-500 ${
         isScrolled 
-          ? 'bg-black/90 backdrop-blur-xl border-b border-white/10 shadow-2xl' 
+          ? 'bg-gradient-to-r from-slate-900/95 via-gray-900/95 to-slate-900/95 backdrop-blur-xl border-b border-cyan-500/20 shadow-lg shadow-cyan-500/10' 
           : 'bg-transparent'
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -105,8 +106,8 @@ const Navbar = () => {
             >
               <img 
                 src={assets.logo} 
-                alt="MovieHub Logo" 
-                className="h-8 lg:h-10 w-auto transition-transform duration-300 group-hover:scale-105"
+                alt="CineMax Logo" 
+                className="h-10 lg:h-12 w-auto transition-all duration-300 group-hover:scale-105 drop-shadow-lg"
               />
             </Link>
 
@@ -121,8 +122,8 @@ const Navbar = () => {
                     onClick={handleLinkClick}
                     className={`group relative flex items-center gap-2 px-3 lg:px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
                       item.active
-                        ? 'text-white bg-red-500/20 border border-red-500/30'
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                        ? 'text-white bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 neon-glow'
+                        : 'text-gray-300 hover:text-cyan-400 hover:bg-cyan-500/10'
                     }`}
                   >
                     <IconComponent className="w-4 h-4" />
@@ -130,7 +131,7 @@ const Navbar = () => {
                     
                     {/* Active indicator */}
                     {item.active && (
-                      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full" />
+                      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-cyan-400 rounded-full shadow-lg shadow-cyan-400/50" />
                     )}
                   </Link>
                 );
@@ -141,15 +142,15 @@ const Navbar = () => {
             <div className="flex items-center gap-3 lg:gap-4">
               
               {/* Search Button */}
-              <button className="hidden sm:flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white transition-all duration-300 group">
+              <button className="hidden sm:flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 text-gray-300 hover:text-cyan-400 transition-all duration-300 group border border-cyan-500/20">
                 <Search className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
               </button>
 
               {/* User Section */}
-              {!user ? (
+              {!isAuthenticated ? (
                 <button 
-                  onClick={openSignIn}
-                  className="flex items-center gap-2 px-4 lg:px-6 py-2 lg:py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium rounded-full transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-red-500/25"
+                  onClick={() => navigate('/login')}
+                  className="flex items-center gap-2 px-4 lg:px-6 py-2 lg:py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-medium rounded-full transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-cyan-500/25 border border-cyan-400/20"
                 >
                   <LogIn className="w-4 h-4" />
                   <span className="hidden sm:inline">Đăng nhập</span>
@@ -159,33 +160,17 @@ const Navbar = () => {
                   {/* User greeting (desktop only) */}
                   <div className="hidden lg:flex items-center gap-2 text-gray-300">
                     <span className="text-sm">Chào,</span>
-                    <span className="text-white font-medium">{user.firstName || 'Bạn'}</span>
+                    <span className="text-white font-medium">{user?.fullName?.split(' ')[0] || 'Bạn'}</span>
                   </div>
                   
                   {/* Custom User Button */}
                   <div className="relative group">
-                    <UserButton 
-                      appearance={{
-                        elements: {
-                          avatarBox: "w-10 h-10 rounded-full ring-2 ring-white/20 hover:ring-red-500/50 transition-all duration-300",
-                          userButtonPopoverCard: "bg-gray-900 border border-gray-700 shadow-2xl",
-                          userButtonPopoverFooter: "hidden"
-                        }
-                      }}
+                    <button
+                      onClick={() => setShowUserProfile(true)}
+                      className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-medium hover:scale-105 transition-all duration-300 ring-2 ring-cyan-400/30 hover:ring-cyan-400/50 shadow-lg shadow-cyan-500/25"
                     >
-                      <UserButton.MenuItems>
-                        <UserButton.Link
-                          label="Vé đã đặt"
-                          labelIcon={<TicketCheck className="w-4 h-4" />}
-                          href="/my-booking"
-                        />
-                        <UserButton.Action 
-                          label="Thông tin cá nhân"
-                          labelIcon={<User className="w-4 h-4" />}
-                          onClick={() => navigate('/profile')}
-                        />
-                      </UserButton.MenuItems>
-                    </UserButton>
+                      {user?.fullName?.charAt(0)?.toUpperCase() || 'U'}
+                    </button>
                   </div>
                 </div>
               )}
@@ -260,10 +245,10 @@ const Navbar = () => {
                     </div>
                     <div>
                       <p className="text-white font-medium">
-                        {user.firstName} {user.lastName}
+                        {user.fullName || 'Người dùng'}
                       </p>
                       <p className="text-gray-400 text-sm">
-                        {user.emailAddresses[0]?.emailAddress}
+                        {user.email}
                       </p>
                     </div>
                   </div>
@@ -287,6 +272,12 @@ const Navbar = () => {
 
       {/* Spacer to prevent content overlap */}
       <div className="h-16 lg:h-20" />
+      
+      {/* User Profile Modal */}
+      <UserProfile 
+        isOpen={showUserProfile} 
+        onClose={() => setShowUserProfile(false)} 
+      />
     </>
   );
 };

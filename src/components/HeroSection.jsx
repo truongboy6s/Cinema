@@ -4,83 +4,88 @@ import { Calendar, Clock, Star, Play } from 'lucide-react'
 
 const HeroSection = () => {
   return (
-    <div className='relative flex flex-col items-start justify-center gap-6 px-6 md:px-16 lg:px-36 bg-[url("/backgroundImage.png")] bg-cover bg-center h-screen pt-20'>
+    <div className='relative flex flex-col items-start justify-center gap-6 px-6 md:px-16 lg:px-36 bg-gradient-to-br from-slate-900 via-gray-900 to-black h-screen pt-20 overflow-hidden'>
         
-        <div className='absolute inset-0 bg-gradient-to-r from-black/70 to-black/30'></div>
+        {/* Animated background elements */}
+        <div className='absolute inset-0'>
+          <div className='absolute top-20 left-10 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl animate-pulse'></div>
+          <div className='absolute bottom-20 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000'></div>
+          <div className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-2000'></div>
+        </div>
+        
+        <div className='absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent'></div>
         
         <div className='relative z-10 max-w-4xl'>
           
-          <div className='flex items-center gap-3 mb-4'>
-            <img src={assets.marvelLogo} alt='Studio Logo' className="h-8 md:h-10"/>
-            <span className='text-orange-400 font-medium text-sm tracking-wider'>PHIM CHIẾU RẠP</span>
+          <div className='flex items-center gap-3 mb-4 animate-slideIn'>
+            <div className='w-3 h-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-pulse'></div>
+            <span className='text-cyan-400 font-medium text-sm tracking-wider uppercase'>Phim Chiếu Rạp Mới Nhất</span>
           </div>
       
-          <h1 className='text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 leading-tight'>
-            Vệ Binh <br/> 
-            <span className='text-transparent bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text'>Dải Ngân Hà</span>
+          <h1 className='text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 leading-tight animate-fadeInUp'>
+            Trải Nghiệm <br/> 
+            <span className='text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text animate-shimmer bg-size-200'>Điện Ảnh</span> <br/>
+            <span className='text-2xl md:text-3xl lg:text-4xl text-gray-300'>Hoàn Hảo</span>
           </h1>
 
-          <p className='text-gray-300 text-lg md:text-xl mb-6 max-w-2xl leading-relaxed'>
-            Cuộc phiêu lưu vũ trụ đầy kịch tính với những người bạn bất đồng, 
-            cùng nhau bảo vệ dải ngân hà khỏi những thế lực hắc ám.
+          <p className='text-gray-300 text-lg md:text-xl mb-6 max-w-2xl leading-relaxed animate-fadeInUp delay-200'>
+            Khám phá thế giới điện ảnh với những bộ phim bom tấn mới nhất, 
+            công nghệ âm thanh và hình ảnh đẳng cấp quốc tế.
           </p>
 
-          <div className='flex flex-wrap items-center gap-4 text-gray-200 text-sm md:text-base mb-8'>
+          <div className='flex flex-wrap items-center gap-4 text-gray-200 text-sm md:text-base mb-8 animate-fadeInUp delay-300'>
               
               {/* Thể loại */}
-              <div className='bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 px-4 py-2 rounded-full backdrop-blur'>
-                <span>Hành Động • Phiêu Lưu • Khoa Học Viễn Tưởng</span>
+              <div className='bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 px-4 py-2 rounded-full backdrop-blur glass'>
+                <span>Bom Tấn • Hành Động • Phiêu Lưu</span>
               </div>
               
-              {/* Năm phát hành */}
-              <div className='flex items-center gap-2 bg-white/10 px-3 py-2 rounded-full backdrop-blur'>
-                  <Calendar className='w-4 h-4 text-blue-400' />
-                  <span>2025</span>
+              {/* Chất lượng */}
+              <div className='flex items-center gap-2 glass px-3 py-2 rounded-full border border-cyan-500/20'>
+                  <Calendar className='w-4 h-4 text-cyan-400' />
+                  <span>4K Ultra HD</span>
               </div>
 
-              {/* Thời lượng */}
-              <div className='flex items-center gap-2 bg-white/10 px-3 py-2 rounded-full backdrop-blur'>
-                  <Clock className='w-4 h-4 text-green-400' />
-                  <span>2 giờ 9 phút</span>
+              {/* Âm thanh */}
+              <div className='flex items-center gap-2 glass px-3 py-2 rounded-full border border-cyan-500/20'>
+                  <Clock className='w-4 h-4 text-blue-400' />
+                  <span>Dolby Atmos</span>
               </div>
 
-              {/* Rating Việt Nam */}
-              <div className='flex items-center gap-2 bg-white/10 px-3 py-2 rounded-full backdrop-blur'>
+              {/* Rating */}
+              <div className='flex items-center gap-2 glass px-3 py-2 rounded-full border border-cyan-500/20'>
                   <Star className='w-4 h-4 text-yellow-400 fill-current' />
-                  <span>T13 - Phù hợp từ 13 tuổi</span> 
+                  <span>9.2/10 IMDb</span> 
               </div>
           </div>
 
-          {/* 🇻🇳 Vietnamese Action Buttons */}
-          <div className='flex flex-wrap gap-4'>
+          {/* Action Buttons */}
+          <div className='flex flex-wrap gap-4 animate-fadeInUp delay-500'>
               
-              {/* Nút xem trailer */}
-              <button className='flex items-center gap-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-3 rounded-full font-semibold transition-all duration-300 shadow-lg hover:shadow-red-500/25'>
-                <Play className='w-5 h-5 fill-current' />
-                <span>Xem Trailer</span>
-              </button>
-
               {/* Nút đặt vé */}
-              <button className='flex items-center gap-3 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-6 py-3 rounded-full font-semibold transition-all duration-300 shadow-lg hover:shadow-orange-500/25'>
+              <button className='flex items-center gap-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 shadow-lg hover:shadow-cyan-500/25 transform hover:scale-105 neon-glow'>
                 <Calendar className='w-5 h-5' />
                 <span>Đặt Vé Ngay</span> 
               </button>
 
-              {/* Nút thêm vào danh sách yêu thích */}
-              <button className='border-2 border-white/30 hover:border-white/50 text-white px-6 py-3 rounded-full font-medium transition-all duration-300 backdrop-blur hover:bg-white/10'>
-                Yêu Thích
+              {/* Nút xem trailer */}
+              <button className='flex items-center gap-3 glass border border-cyan-500/30 hover:border-cyan-500/50 text-white px-8 py-4 rounded-full font-medium transition-all duration-300 hover:bg-cyan-500/10 group'>
+                <Play className='w-5 h-5 group-hover:scale-110 transition-transform' />
+                <span>Xem Trailer</span>
               </button>
           </div>
 
-          {/* 🇻🇳 Vietnamese Cinema Info */}
-          <div className='mt-8 p-4 bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-lg border border-blue-500/20 backdrop-blur'>
+          {/* Cinema Info */}
+          <div className='mt-8 p-6 glass rounded-2xl border border-cyan-500/20 animate-fadeInUp delay-700'>
             <div className='flex flex-wrap items-center justify-between gap-4 text-sm'>
-              <div>
-                <span className='text-blue-300 font-medium'>Đang chiếu tại:</span>
+              <div className='flex items-center gap-2'>
+                <div className='w-2 h-2 bg-green-400 rounded-full animate-pulse'></div>
+                <span className='text-cyan-300 font-medium'>Đang chiếu tại:</span>
                 <span className='text-white ml-2'>CGV, Lotte Cinema, Galaxy Cinema</span>
               </div>
-              <div>
-                <span className='text-purple-300 font-medium'>Suất chiếu:</span>
+              <div className='flex items-center gap-2'>
+                <div className='w-2 h-2 bg-blue-400 rounded-full animate-pulse'></div>
+                <span className='text-blue-300 font-medium'>Suất chiếu:</span>
                 <span className='text-white ml-2'>10:00 • 14:30 • 19:00 • 21:30</span>
               </div>
             </div>
