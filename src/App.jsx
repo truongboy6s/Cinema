@@ -15,9 +15,20 @@ import Favorites from './pages/Favorite';
 import Releases from './pages/Releases';
 import Theaters from './pages/Theaters';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminProtectedRoute from './components/AdminProtectedRoute';
 import { Loader2 } from 'lucide-react';
+
+// Admin imports
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminWelcome from './components/admin/AdminWelcome';
+import UserManagement from './components/admin/UserManagement';
+import MovieManagement from './components/admin/MovieManagement';
+import Analytics from './components/admin/Analytics';
+import SystemSettings from './components/admin/SystemSettings';
 
 const AppContent = () => {
   const { loading } = useAuth();
@@ -62,6 +73,20 @@ const AppContent = () => {
         <Route path='/theaters' element={<Theaters/>} />
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
+        
+        {/* Admin Routes */}
+        <Route path='/admin-login' element={<AdminLogin />} />
+        <Route path='/admin' element={
+          <AdminProtectedRoute>
+            <AdminDashboard />
+          </AdminProtectedRoute>
+        }>
+          <Route index element={<AdminWelcome />} />
+          <Route path='users' element={<UserManagement />} />
+          <Route path='movies' element={<MovieManagement />} />
+          <Route path='analytics' element={<Analytics />} />
+          <Route path='settings' element={<SystemSettings />} />
+        </Route>
       </Routes>
       {!isAdminRoute && <Footer />}
     </>
@@ -72,7 +97,9 @@ const App = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <AppContent />
+        <AdminAuthProvider>
+          <AppContent />
+        </AdminAuthProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

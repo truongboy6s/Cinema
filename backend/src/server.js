@@ -9,6 +9,7 @@ const connectDB = require('./config/database');
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const adminAuthRoutes = require('./routes/adminAuth');
 const userRoutes = require('./routes/users');
 const movieRoutes = require('./routes/movies');
 const bookingRoutes = require('./routes/bookings');
@@ -57,6 +58,7 @@ app.get('/api/health', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', adminAuthRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/movies', movieRoutes);
 app.use('/api/bookings', bookingRoutes);
