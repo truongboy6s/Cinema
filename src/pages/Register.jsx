@@ -93,12 +93,12 @@ const Register = () => {
         </button>
 
         {/* Register Form */}
-        <div className="glass-card rounded-2xl p-8 shadow-2xl border border-cyan-500/20">
+        <div className="glass-card p-8 shadow-2xl border border-cyan-500/20 max-w-md w-full">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent mb-2">
               Tạo tài khoản mới
             </h1>
-            <p className="text-gray-400">Tham gia cộng đồng CineMax ngay hôm nay!</p>
+            <p className="text-gray-400 text-sm">Tham gia cộng đồng CineMax ngay hôm nay!</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -114,7 +114,7 @@ const Register = () => {
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  placeholder="Nhập họ và tên của bạn"
+                  placeholder="      Nhập họ và tên của bạn"
                   className="input-field pl-12"
                   required
                 />
@@ -133,7 +133,7 @@ const Register = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="example@email.com"
+                  placeholder="      example@email.com"
                   className="input-field pl-12"
                   required
                 />
@@ -152,7 +152,7 @@ const Register = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="0123 456 789"
+                  placeholder="      0123 456 789"
                   className="input-field pl-12"
                   required
                 />
@@ -171,7 +171,7 @@ const Register = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="Tối thiểu 6 ký tự"
+                  placeholder="      Tối thiểu 6 ký tự"
                   className="input-field pl-12 pr-12"
                   required
                   minLength={6}
@@ -198,7 +198,7 @@ const Register = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  placeholder="Nhập lại mật khẩu"
+                  placeholder="      Nhập lại mật khẩu"
                   className="input-field pl-12 pr-12"
                   required
                 />
@@ -216,21 +216,19 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full group"
+              className="btn-primary w-full group relative overflow-hidden"
             >
-              <span className="flex items-center justify-center gap-2">
-                {loading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Đang tạo tài khoản...
-                  </>
-                ) : (
-                  <>
-                    Tạo tài khoản
-                    <User size={18} className="group-hover:scale-110 transition-transform" />
-                  </>
-                )}
-              </span>
+              {loading ? (
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Đang tạo tài khoản...</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <span>Tạo tài khoản</span>
+                  <User size={16} className="group-hover:scale-110 transition-transform" />
+                </div>
+              )}
             </button>
           </form>
 

@@ -135,9 +135,19 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:transform-none shadow-lg shadow-cyan-500/25 neon-glow"
+              className="btn-primary w-full group"
             >
-              {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+              {loading ? (
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Đang đăng nhập...</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-3">
+                  <span>Đăng nhập</span>
+                  <User size={18} className="group-hover:scale-110 transition-transform" />
+                </div>
+              )}
             </button>
           </form>
 
