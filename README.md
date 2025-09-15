@@ -25,8 +25,6 @@
 - [🧪 Testing](#-testing)
 - [🚀 Triển Khai](#-triển-khai)
 - [🤝 Đóng Góp](#-đóng-góp)
-- [📄 Giấy Phép](#-giấy-phép)
-- [👥 Tác Giả](#-tác-giả)
 
 ---
 
