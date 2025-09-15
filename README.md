@@ -68,7 +68,6 @@
 - **Framer Motion**: Animation library cho UX mượt mà
 
 ### API Integration
-- **YouTube Data API v3**: Tích hợp trailer phim chất lượng cao
 - **Axios**: HTTP client cho việc gọi API
 - **React Query**: Quản lý state server và caching
 
