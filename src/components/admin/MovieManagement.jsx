@@ -1,41 +1,23 @@
 import React, { useState } from 'react';
 import { Search, Plus, Edit, Trash2, Eye, Star, Calendar, Clock } from 'lucide-react';
+import { useMovies } from '../../contexts/MovieContext';
 
 const MovieManagement = () => {
-  const [movies, setMovies] = useState([
-    {
-      id: 1,
-      title: 'Spider-Man: No Way Home',
-      genre: 'Action, Adventure',
-      duration: 148,
-      rating: 4.8,
-      releaseDate: '2024-12-15',
-      status: 'showing',
-      poster: '/api/placeholder/100/150'
-    },
-    {
-      id: 2,
-      title: 'The Batman',
-      genre: 'Action, Crime, Drama',
-      duration: 176,
-      rating: 4.7,
-      releaseDate: '2024-03-04',
-      status: 'showing',
-      poster: '/api/placeholder/100/150'
-    },
-    {
-      id: 3,
-      title: 'Doctor Strange 2',
-      genre: 'Action, Adventure, Fantasy',
-      duration: 126,
-      rating: 4.6,
-      releaseDate: '2024-05-06',
-      status: 'coming-soon',
-      poster: '/api/placeholder/100/150'
-    }
-  ]);
-
+  const { movies, addMovie, updateMovie, deleteMovie } = useMovies();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingMovie, setEditingMovie] = useState(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    genre: '',
+    duration: '',
+    rating: '',
+    releaseDate: '',
+    status: 'showing',
+    poster: '',
+    backdrop_path: '',
+    overview: ''
+  });
 
   const filteredMovies = movies.filter(movie =>
     movie.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -68,6 +50,69 @@ const MovieManagement = () => {
     }
   };
 
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (editingMovie) {
+      updateMovie(editingMovie.id, {
+        ...formData,
+        duration: parseInt(formData.duration),
+        rating: parseFloat(formData.rating),
+        release_date: formData.releaseDate
+      });
+      setEditingMovie(null);
+    } else {
+      addMovie({
+        ...formData,
+        duration: parseInt(formData.duration),
+        rating: parseFloat(formData.rating),
+        release_date: formData.releaseDate,
+        vote_average: parseFloat(formData.rating),
+        runtime: parseInt(formData.duration)
+      });
+    }
+    setFormData({
+      title: '',
+      genre: '',
+      duration: '',
+      rating: '',
+      releaseDate: '',
+      status: 'showing',
+      poster: '',
+      backdrop_path: '',
+      overview: ''
+    });
+    setShowAddForm(false);
+  };
+
+  const handleEdit = (movie) => {
+    setEditingMovie(movie);
+    setFormData({
+      title: movie.title || '',
+      genre: movie.genre || '',
+      duration: movie.duration?.toString() || '',
+      rating: movie.rating?.toString() || '',
+      releaseDate: movie.release_date || '',
+      status: movie.status || 'showing',
+      poster: movie.poster || '',
+      backdrop_path: movie.backdrop_path || '',
+      overview: movie.overview || ''
+    });
+    setShowAddForm(true);
+  };
+
+  const handleDelete = (movieId) => {
+    if (confirm('Bạn có chắc chắn muốn xóa phim này?')) {
+      deleteMovie(movieId);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -76,7 +121,24 @@ const MovieManagement = () => {
           <h1 className="text-2xl font-bold text-white">Quản lý phim</h1>
           <p className="text-gray-400">Quản lý danh sách phim và thông tin chiếu</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-lg transition-all duration-200">
+        <button 
+          onClick={() => {
+            setEditingMovie(null);
+            setFormData({
+              title: '',
+              genre: '',
+              duration: '',
+              rating: '',
+              releaseDate: '',
+              status: 'showing',
+              poster: '',
+              backdrop_path: '',
+              overview: ''
+            });
+            setShowAddForm(true);
+          }}
+          className="flex items-center px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-lg transition-all duration-200"
+        >
           <Plus className="w-5 h-5 mr-2" />
           Thêm phim mới
         </button>
@@ -161,10 +223,16 @@ const MovieManagement = () => {
                 <button className="flex-1 p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-gray-300 hover:text-white transition-colors">
                   <Eye className="w-4 h-4 mx-auto" />
                 </button>
-                <button className="flex-1 p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors">
+                <button 
+                  onClick={() => handleEdit(movie)}
+                  className="flex-1 p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                >
                   <Edit className="w-4 h-4 mx-auto" />
                 </button>
-                <button className="flex-1 p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors">
+                <button 
+                  onClick={() => handleDelete(movie.id)}
+                  className="flex-1 p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
+                >
                   <Trash2 className="w-4 h-4 mx-auto" />
                 </button>
               </div>
@@ -172,6 +240,148 @@ const MovieManagement = () => {
           </div>
         ))}
       </div>
+
+      {/* Add/Edit Movie Modal */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="glass-card rounded-xl border border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-white mb-6">
+                {editingMovie ? 'Sửa phim' : 'Thêm phim mới'}
+              </h2>
+              
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-white mb-2">Tên phim *</label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 bg-slate-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-white mb-2">Thể loại</label>
+                    <input
+                      type="text"
+                      name="genre"
+                      value={formData.genre}
+                      onChange={handleInputChange}
+                      placeholder="Action, Drama, Sci-Fi"
+                      className="w-full px-3 py-2 bg-slate-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-white mb-2">Thời lượng (phút)</label>
+                    <input
+                      type="number"
+                      name="duration"
+                      value={formData.duration}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 bg-slate-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-white mb-2">Đánh giá (1-10)</label>
+                    <input
+                      type="number"
+                      name="rating"
+                      value={formData.rating}
+                      onChange={handleInputChange}
+                      min="1"
+                      max="10"
+                      step="0.1"
+                      className="w-full px-3 py-2 bg-slate-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-white mb-2">Ngày khởi chiếu</label>
+                    <input
+                      type="date"
+                      name="releaseDate"
+                      value={formData.releaseDate}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 bg-slate-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-white mb-2">Trạng thái</label>
+                    <select
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 bg-slate-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                    >
+                      <option value="showing">Đang chiếu</option>
+                      <option value="coming-soon">Sắp chiếu</option>
+                      <option value="ended">Đã kết thúc</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-white mb-2">URL Poster</label>
+                  <input
+                    type="url"
+                    name="poster"
+                    value={formData.poster}
+                    onChange={handleInputChange}
+                    placeholder="https://example.com/poster.jpg"
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-white mb-2">URL Background</label>
+                  <input
+                    type="url"
+                    name="backdrop_path"
+                    value={formData.backdrop_path}
+                    onChange={handleInputChange}
+                    placeholder="https://example.com/backdrop.jpg"
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-white mb-2">Mô tả</label>
+                  <textarea
+                    name="overview"
+                    value={formData.overview}
+                    onChange={handleInputChange}
+                    rows="3"
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                  ></textarea>
+                </div>
+                
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-lg transition-all duration-200"
+                  >
+                    {editingMovie ? 'Cập nhật' : 'Thêm phim'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddForm(false)}
+                    className="flex-1 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-all duration-200"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

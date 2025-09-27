@@ -16,6 +16,7 @@ import Releases from './pages/Releases';
 import Theaters from './pages/Theaters';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
+import { MovieProvider } from './contexts/MovieContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
@@ -98,7 +99,9 @@ const App = () => {
     <ErrorBoundary>
       <AuthProvider>
         <AdminAuthProvider>
-          <AppContent />
+          <MovieProvider>
+            <AppContent />
+          </MovieProvider>
         </AdminAuthProvider>
       </AuthProvider>
     </ErrorBoundary>
