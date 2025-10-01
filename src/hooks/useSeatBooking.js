@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import { dummyShowsData } from '../assets/assets';
+import { useMovies } from '../contexts/MovieContext';
 
 export const useSeatBooking = () => {
   const { movieId, showId } = useParams();
   const location = useLocation();
+  const { movies, loading: moviesLoading } = useMovies();
   
   const [movie, setMovie] = useState(null);
   const [showDetails, setShowDetails] = useState(null);
@@ -16,14 +17,15 @@ export const useSeatBooking = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+      if (!moviesLoading && movies.length > 0) {
+        try {
+          setLoading(true);
+          setError(null);
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+          // Simulate API delay
+          await new Promise(resolve => setTimeout(resolve, 1000));
 
-        const selectedMovie = dummyShowsData.find(m => m._id === movieId);
+          const selectedMovie = movies.find(m => m._id === movieId);
         
         if (!selectedMovie) {
           throw new Error('Movie not found');
@@ -58,15 +60,16 @@ export const useSeatBooking = () => {
         const occupied = generateOccupiedSeats();
         setOccupiedSeats(occupied);
         
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
       }
     };
 
     loadData();
-  }, [movieId, showId, location.state]);
+  }, [movieId, showId, location.state, movies, moviesLoading]);
 
   // Generate random occupied seats for demo
   const generateOccupiedSeats = () => {

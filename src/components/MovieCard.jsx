@@ -1,7 +1,8 @@
-import { Star, Trash2 } from 'lucide-react'; // Added Trash2 for remove functionality
+import { Star, Trash2 } from 'lucide-react';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import timeFormat from '../lib/timeFormat';
+import { getPosterUrl, getBackdropUrl } from '../utils/imageUtils';
 
 const MovieCard = ({ movie, viewMode = 'grid', onRemove }) => {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ const MovieCard = ({ movie, viewMode = 'grid', onRemove }) => {
     >
       <img
         onClick={handleCardClick}
-        src={movie.backdrop_path}
+        src={getBackdropUrl(movie)}
         alt={`${movie.title} poster`}
         loading="lazy"
         className="rounded-lg h-56 w-full object-cover cursor-pointer transition-transform group-hover:scale-105"

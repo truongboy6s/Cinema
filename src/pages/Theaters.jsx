@@ -1,84 +1,92 @@
 import React, { useState, useEffect } from 'react';
-import { dummyShowsData, dummyDateTimeData } from '../assets/assets';
+import { dummyDateTimeData } from '../assets/assets';
 import { MapPin, Clock, Ticket, Loader2, Search, X } from 'lucide-react';
 import BlurCircle from '../components/BlurCircle';
 import { useNavigate } from 'react-router-dom';
+import { useMovies } from '../contexts/MovieContext';
 
-// Dummy data for theaters (simulated with modern features)
-const dummyTheaters = [
-  {
-    id: 1,
-    name: 'CGV VivoCity',
-    address: 'Tầng 5, VivoCity, 1058 Nguyễn Văn Linh, Q.7, TP.HCM',
-    location: 'TP. Hồ Chí Minh',
-    image: 'https://via.placeholder.com/400x200?text=CGV+VivoCity', // Placeholder image
-    shows: Object.keys(dummyDateTimeData).slice(0, 2).reduce((acc, date) => {
-      acc[date] = dummyDateTimeData[date].map((show, index) => ({
-        ...show,
-        movie: dummyShowsData[index % dummyShowsData.length],
-      }));
-      return acc;
-    }, {}),
-  },
-  {
-    id: 2,
-    name: 'Galaxy Quang Trung',
-    address: '190 Quang Trung, P.10, Q.Gò Vấp, TP.HCM',
-    location: 'TP. Hồ Chí Minh',
-    image: 'https://via.placeholder.com/400x200?text=Galaxy+Quang+Trung',
-    shows: Object.keys(dummyDateTimeData).slice(2, 4).reduce((acc, date) => {
-      acc[date] = dummyDateTimeData[date].map((show, index) => ({
-        ...show,
-        movie: dummyShowsData[(index + 2) % dummyShowsData.length],
-      }));
-      return acc;
-    }, {}),
-  },
-  {
-    id: 3,
-    name: 'BHD Star Cineplex',
-    address: 'Tầng 3, Vincom Center, 72 Lê Thánh Tôn, Q.1, TP.HCM',
-    location: 'TP. Hồ Chí Minh',
-    image: 'https://via.placeholder.com/400x200?text=BHD+Star+Cineplex',
-    shows: Object.keys(dummyDateTimeData).slice(0, 3).reduce((acc, date) => {
-      acc[date] = dummyDateTimeData[date].map((show, index) => ({
-        ...show,
-        movie: dummyShowsData[(index + 4) % dummyShowsData.length],
-      }));
-      return acc;
-    }, {}),
-  },
-  {
-    id: 4,
-    name: 'Lotte Cinema Nam Sài Gòn',
-    address: 'Tầng 3, Lotte Mart, 469 Nguyễn Hữu Thọ, Q.7, TP.HCM',
-    location: 'TP. Hồ Chí Minh',
-    image: 'https://via.placeholder.com/400x200?text=Lotte+Cinema',
-    shows: Object.keys(dummyDateTimeData).slice(1, 4).reduce((acc, date) => {
-      acc[date] = dummyDateTimeData[date].map((show, index) => ({
-        ...show,
-        movie: dummyShowsData[(index + 1) % dummyShowsData.length],
-      }));
-      return acc;
-    }, {}),
-  },
-];
+// Function to generate theater data with real movies
+const generateTheaters = (movies) => {
+  if (!movies || movies.length === 0) return [];
+  
+  return [
+    {
+      id: 1,
+      name: 'CGV VivoCity',
+      address: 'Tầng 5, VivoCity, 1058 Nguyễn Văn Linh, Q.7, TP.HCM',
+      location: 'TP. Hồ Chí Minh',
+      image: null,
+      shows: Object.keys(dummyDateTimeData).slice(0, 2).reduce((acc, date) => {
+        acc[date] = dummyDateTimeData[date].map((show, index) => ({
+          ...show,
+          movie: movies[index % movies.length],
+        }));
+        return acc;
+      }, {}),
+    },
+    {
+      id: 2,
+      name: 'Galaxy Quang Trung',
+      address: '190 Quang Trung, P.10, Q.Gò Vấp, TP.HCM',
+      location: 'TP. Hồ Chí Minh',
+      image: null,
+      shows: Object.keys(dummyDateTimeData).slice(2, 4).reduce((acc, date) => {
+        acc[date] = dummyDateTimeData[date].map((show, index) => ({
+          ...show,
+          movie: movies[(index + 1) % movies.length],
+        }));
+        return acc;
+      }, {}),
+    },
+    {
+      id: 3,
+      name: 'BHD Star Cineplex',
+      address: 'Tầng 3, Vincom Center, 72 Lê Thánh Tôn, Q.1, TP.HCM',
+      location: 'TP. Hồ Chí Minh',
+      image: null,
+      shows: Object.keys(dummyDateTimeData).slice(0, 3).reduce((acc, date) => {
+        acc[date] = dummyDateTimeData[date].map((show, index) => ({
+          ...show,
+          movie: movies[(index + 2) % movies.length],
+        }));
+        return acc;
+      }, {}),
+    },
+    {
+      id: 4,
+      name: 'Lotte Cinema Nam Sài Gòn',
+      address: 'Tầng 3, Lotte Mart, 469 Nguyễn Hữu Thọ, Q.7, TP.HCM',
+      location: 'TP. Hồ Chí Minh',
+      image: null,
+      shows: Object.keys(dummyDateTimeData).slice(1, 4).reduce((acc, date) => {
+        acc[date] = dummyDateTimeData[date].map((show, index) => ({
+          ...show,
+          movie: movies[index % movies.length],
+        }));
+        return acc;
+      }, {}),
+    },
+  ];
+};
 
 const Theaters = () => {
   const navigate = useNavigate();
+  const { movies, loading: moviesLoading } = useMovies();
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredTheaters, setFilteredTheaters] = useState([]);
 
-  // Mock loading effect
+  // Generate theaters with real movie data
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setFilteredTheaters(dummyTheaters);
+    if (!moviesLoading && movies.length > 0) {
+      const theaters = generateTheaters(movies);
+      setFilteredTheaters(theaters);
       setLoading(false);
-    }, 800);
-
-    return () => clearTimeout(timer);
-  }, []);
+    } else if (!moviesLoading && movies.length === 0) {
+      setFilteredTheaters([]);
+      setLoading(false);
+    }
+  }, [movies, moviesLoading]);
 
   // Filter theaters based on search query (by name or location)
   useEffect(() => {
@@ -167,12 +175,22 @@ const Theaters = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
             {filteredTheaters.map((theater) => (
               <div key={theater.id} className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
-                <img
-                  src={theater.image}
-                  alt={`${theater.name} exterior`}
-                  className="w-full h-48 object-cover rounded-xl mb-4"
-                  loading="lazy"
-                />
+                {theater.image && (
+                  <img
+                    src={theater.image}
+                    alt={`${theater.name} exterior`}
+                    className="w-full h-48 object-cover rounded-xl mb-4"
+                    loading="lazy"
+                  />
+                )}
+                {!theater.image && (
+                  <div className="w-full h-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl mb-4 flex items-center justify-center">
+                    <div className="text-gray-500 text-center">
+                      <MapPin className="w-8 h-8 mx-auto mb-2" />
+                      <p className="text-sm">Hình ảnh rạp</p>
+                    </div>
+                  </div>
+                )}
                 <h3 className="font-semibold text-white text-lg mb-2">{theater.name}</h3>
                 <p className="text-sm text-gray-400 mb-4 flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-green-500" />

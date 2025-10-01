@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { dummyShowsData } from '../assets/assets';
 import MovieCard from '../components/MovieCard';
+import { useMovies } from '../contexts/MovieContext';
 import { 
   Search, 
   Filter, 
@@ -18,8 +18,9 @@ import {
 import BlurCircle from '../components/BlurCircle';
 
 const Movies = () => {
-  const [movies, setMovies] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Get movies from MongoDB via MovieContext
+  const { movies, loading, error } = useMovies();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [sortBy, setSortBy] = useState('latest');
@@ -27,15 +28,7 @@ const Movies = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [filteredMovies, setFilteredMovies] = useState([]);
 
-  // Mock loading effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setMovies(dummyShowsData);
-      setLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
+  // Movies now come from MongoDB via useMovies hook - no need for mock loading
 
   // Filter and search movies
   useEffect(() => {

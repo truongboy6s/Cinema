@@ -5,7 +5,7 @@ import { useMovies } from '../contexts/MovieContext';
 
 const MovieList = () => {
   const scrollRef = useRef(null);
-  const { movies } = useMovies();
+  const { movies, loading, error } = useMovies();
 
   const scroll = (direction) => {
     if (scrollRef.current) {
@@ -43,11 +43,31 @@ const MovieList = () => {
             className="flex overflow-x-hidden space-x-4 snap-x snap-mandatory"
             style={{ scrollSnapType: 'x mandatory' }} // For smooth snapping
           >
-            {movies.map((movie) => (
-              <div key={movie.id} className="flex-shrink-0">
-                <MovieCard movie={movie} />
+            {loading ? (
+              // Loading skeleton
+              Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className="flex-shrink-0 w-64 h-96 bg-gray-800 rounded-lg animate-pulse"></div>
+              ))
+            ) : error ? (
+              // Error state
+              <div className="flex-shrink-0 w-full text-center py-8">
+                <p className="text-red-400">❌ Không thể tải phim từ server</p>
+                <p className="text-gray-400 text-sm mt-2">{error}</p>
               </div>
-            ))}
+            ) : movies.length === 0 ? (
+              // Empty state
+              <div className="flex-shrink-0 w-full text-center py-8">
+                <p className="text-gray-400">📽️ Chưa có phim nào được thêm</p>
+                <p className="text-gray-500 text-sm mt-2">Hãy thêm phim từ trang admin</p>
+              </div>
+            ) : (
+              // Movies list
+              movies.map((movie) => (
+                <div key={movie.id || movie._id} className="flex-shrink-0">
+                  <MovieCard movie={movie} />
+                </div>
+              ))
+            )}
           </div>
 
           {/* Right Button */}

@@ -20,6 +20,7 @@ import { MovieProvider } from './contexts/MovieContext';
 import { ShowtimeProvider } from './contexts/ShowtimeContext';
 import { TheaterProvider } from './contexts/TheaterContext';
 import { BookingProvider } from './contexts/BookingContext';
+import { UserProvider } from './contexts/UserContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
@@ -106,19 +107,21 @@ const AppContent = () => {
 const App = () => {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <AdminAuthProvider>
-          <MovieProvider>
-            <ShowtimeProvider>
-              <TheaterProvider>
-                <BookingProvider>
-                  <AppContent />
-                </BookingProvider>
-              </TheaterProvider>
-            </ShowtimeProvider>
-          </MovieProvider>
-        </AdminAuthProvider>
-      </AuthProvider>
+      <UserProvider>
+        <AuthProvider>
+          <AdminAuthProvider>
+            <MovieProvider>
+              <ShowtimeProvider>
+                <TheaterProvider>
+                  <BookingProvider>
+                    <AppContent />
+                  </BookingProvider>
+                </TheaterProvider>
+              </ShowtimeProvider>
+            </MovieProvider>
+          </AdminAuthProvider>
+        </AuthProvider>
+      </UserProvider>
     </ErrorBoundary>
   );
 };

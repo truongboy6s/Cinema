@@ -21,49 +21,8 @@ export const TheaterProvider = ({ children }) => {
       }
     }
     
-    // Default theaters
-    return [
-      {
-        id: 1,
-        name: 'Rạp 1 - Deluxe',
-        type: 'deluxe',
-        capacity: 150,
-        facilities: ['3D', 'Dolby Atmos', 'Recliner Seats'],
-        status: 'active',
-        location: 'Tầng 3',
-        description: 'Rạp cao cấp với ghế ngồi sang trọng và âm thanh vượt trội'
-      },
-      {
-        id: 2,
-        name: 'Rạp 2 - IMAX',
-        type: 'imax',
-        capacity: 200,
-        facilities: ['IMAX', '4DX', 'Laser Projection'],
-        status: 'active',
-        location: 'Tầng 4',
-        description: 'Rạp IMAX với màn hình khổng lồ và công nghệ chiếu laser'
-      },
-      {
-        id: 3,
-        name: 'Rạp 3 - Standard',
-        type: 'standard',
-        capacity: 100,
-        facilities: ['Digital Sound', 'Standard Screen'],
-        status: 'active',
-        location: 'Tầng 2',
-        description: 'Rạp tiêu chuẩn phù hợp cho mọi loại phim'
-      },
-      {
-        id: 4,
-        name: 'Rạp 4 - VIP',
-        type: 'vip',
-        capacity: 50,
-        facilities: ['Private Lounge', 'Premium Service', 'Luxury Seats'],
-        status: 'active',
-        location: 'Tầng 5',
-        description: 'Rạp VIP với dịch vụ cao cấp và không gian riêng tư'
-      }
-    ];
+    // No default sample data - start with empty array
+    return [];
   });
 
   useEffect(() => {

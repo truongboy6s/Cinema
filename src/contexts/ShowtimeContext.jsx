@@ -21,53 +21,8 @@ export const ShowtimeProvider = ({ children }) => {
       }
     }
     
-    // Default showtimes
-    return [
-      {
-        id: 1,
-        movieId: 1,
-        theaterId: 1,
-        date: '2024-12-20',
-        time: '14:30',
-        price: 80000,
-        availableSeats: 120,
-        totalSeats: 150,
-        status: 'active'
-      },
-      {
-        id: 2,
-        movieId: 1,
-        theaterId: 1,
-        date: '2024-12-20',
-        time: '17:00',
-        price: 100000,
-        availableSeats: 95,
-        totalSeats: 150,
-        status: 'active'
-      },
-      {
-        id: 3,
-        movieId: 2,
-        theaterId: 2,
-        date: '2024-12-21',
-        time: '19:30',
-        price: 120000,
-        availableSeats: 80,
-        totalSeats: 200,
-        status: 'active'
-      },
-      {
-        id: 4,
-        movieId: 3,
-        theaterId: 3,
-        date: '2024-12-22',
-        time: '15:45',
-        price: 90000,
-        availableSeats: 60,
-        totalSeats: 100,
-        status: 'active'
-      }
-    ];
+    // No default sample data - start with empty array
+    return [];
   });
 
   useEffect(() => {

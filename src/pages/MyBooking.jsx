@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { dummyBookingData, dummyShowsData } from '../assets/assets';
+import { dummyBookingData } from '../assets/assets';
 import { Ticket, Clock, MapPin, CreditCard, Star, Trash2, Eye, CheckCircle, XCircle, AlertCircle, Calendar, Search, Filter } from 'lucide-react';
 import BlurCircle from '../components/BlurCircle';
 import timeFormat from '../lib/timeFormat';
+import { useMovies } from '../contexts/MovieContext';
 
 const MyBooking = () => {
   const navigate = useNavigate();
+  const { movies, loading: moviesLoading } = useMovies();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'paid', 'unpaid', 'cancelled'
@@ -17,25 +19,27 @@ const MyBooking = () => {
 
   // Simulate fetching bookings for the current user
   useEffect(() => {
-    const timer = setTimeout(() => {
-      // Filter dummyBookingData for the current user (assuming user is "GreatStack" for demo)
-      const userBookings = dummyBookingData.filter(booking => booking.user.name === "GreatStack");
-      
-      // Enhance bookings with movie details and add status (for demo, add random statuses)
-      const enhancedBookings = userBookings.map((booking, index) => {
-        const movie = dummyShowsData.find(m => m._id === booking.show.movie._id);
-        const status = index % 3 === 0 ? 'cancelled' : booking.isPaid ? 'paid' : 'unpaid';
-        const canCancel = !booking.isPaid && new Date(booking.show.showDateTime) > new Date(); // Can cancel if unpaid and future date
-        const canRate = booking.isPaid && new Date(booking.show.showDateTime) < new Date(); // Can rate if paid and past date
-        return { ...booking, movie, status, canCancel, canRate };
-      });
-      
-      setBookings(enhancedBookings);
-      setLoading(false);
-    }, 800);
+    if (!moviesLoading && movies.length > 0) {
+      const timer = setTimeout(() => {
+        // Filter dummyBookingData for the current user (assuming user is "GreatStack" for demo)
+        const userBookings = dummyBookingData.filter(booking => booking.user.name === "GreatStack");
+        
+        // Enhance bookings with movie details and add status (for demo, add random statuses)
+        const enhancedBookings = userBookings.map((booking, index) => {
+          const movie = movies.find(m => m._id === booking.show.movie._id);
+          const status = index % 3 === 0 ? 'cancelled' : booking.isPaid ? 'paid' : 'unpaid';
+          const canCancel = !booking.isPaid && new Date(booking.show.showDateTime) > new Date(); // Can cancel if unpaid and future date
+          const canRate = booking.isPaid && new Date(booking.show.showDateTime) < new Date(); // Can rate if paid and past date
+          return { ...booking, movie, status, canCancel, canRate };
+        });
+        
+        setBookings(enhancedBookings);
+        setLoading(false);
+      }, 800);
 
-    return () => clearTimeout(timer);
-  }, []);
+      return () => clearTimeout(timer);
+    }
+  }, [movies, moviesLoading]);
 
   // Filter and sort bookings
   const getFilteredBookings = () => {

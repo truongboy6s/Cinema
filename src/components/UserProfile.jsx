@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { User, Mail, Phone, Calendar, LogOut, Edit2, Check, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useUsers } from '../contexts/UserContext';
 import toast from 'react-hot-toast';
 
 const UserProfile = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
+  const { updateUser } = useUsers();
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
-    fullName: user?.fullName || '',
+    name: user?.name || user?.fullName || '',
     phone: user?.phone || ''
   });
 
@@ -15,21 +17,12 @@ const UserProfile = ({ isOpen, onClose }) => {
     setIsEditing(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     try {
-      // Here you would typically update the user data via API
-      // For now, we'll just update localStorage
-      const currentUser = JSON.parse(localStorage.getItem('cinema_user') || '{}');
-      const updatedUser = { ...currentUser, ...editData };
-      localStorage.setItem('cinema_user', JSON.stringify(updatedUser));
+      if (!user?.id) return;
       
-      // Update users list as well
-      const users = JSON.parse(localStorage.getItem('cinema_users') || '[]');
-      const userIndex = users.findIndex(u => u.id === currentUser.id);
-      if (userIndex !== -1) {
-        users[userIndex] = { ...users[userIndex], ...editData };
-        localStorage.setItem('cinema_users', JSON.stringify(users));
-      }
+      // Update user through UserContext
+      await updateUser(user.id, editData);
       
       setIsEditing(false);
       toast.success('Cập nhật thông tin thành công!');
@@ -41,7 +34,7 @@ const UserProfile = ({ isOpen, onClose }) => {
 
   const handleCancel = () => {
     setEditData({
-      fullName: user?.fullName || '',
+      name: user?.name || user?.fullName || '',
       phone: user?.phone || ''
     });
     setIsEditing(false);
@@ -95,6 +88,17 @@ const UserProfile = ({ isOpen, onClose }) => {
             <div className="flex items-center gap-3 mt-2">
               <Mail size={20} className="text-gray-400" />
               <p className="text-white">{user?.email}</p>
+            </div>
+          </div>
+
+          {/* Account Status */}
+          <div className="bg-white/5 rounded-xl p-4">
+            <label className="text-sm text-gray-400">Trạng thái tài khoản</label>
+            <div className="flex items-center gap-3 mt-2">
+              <div className={`w-3 h-3 rounded-full ${user?.status === 'active' ? 'bg-green-400' : 'bg-red-400'}`} />
+              <p className={`font-medium ${user?.status === 'active' ? 'text-green-400' : 'text-red-400'}`}>
+                {user?.status === 'active' ? 'Đang hoạt động' : 'Tạm khóa'}
+              </p>
             </div>
           </div>
 

@@ -43,7 +43,7 @@ const Register = () => {
       setLoading(true);
 
       const result = await register({
-        fullName: formData.fullName,
+        name: formData.fullName,
         email: formData.email,
         phone: formData.phone,
         password: formData.password

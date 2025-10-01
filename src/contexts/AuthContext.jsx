@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { useUsers } from './UserContext';
 
 const AuthContext = createContext();
 
@@ -14,6 +15,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { addUser, users } = useUsers();
 
   // Kiểm tra user đã đăng nhập từ localStorage
   useEffect(() => {
@@ -31,13 +33,38 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Kiểm tra trạng thái user real-time
+  useEffect(() => {
+    if (user && users.length > 0) {
+      const currentUser = users.find(u => u.id === user.id);
+      if (currentUser) {
+        if (currentUser.status !== 'active') {
+          // User bị khóa, tự động logout
+          toast.error('Tài khoản của bạn đã bị tạm khóa!');
+          logout();
+        } else if (currentUser.status !== user.status || currentUser.name !== user.name || currentUser.email !== user.email) {
+          // Chỉ cập nhật khi có thay đổi thực sự
+          const updatedUser = { ...currentUser };
+          delete updatedUser.password;
+          setUser(updatedUser);
+          localStorage.setItem('cinema_user', JSON.stringify(updatedUser));
+        }
+      }
+    }
+  }, [users]);
+
   const login = async (email, password) => {
     try {
-      // Simulate API call - replace with actual backend call
-      const users = JSON.parse(localStorage.getItem('cinema_users') || '[]');
+      // Use UserContext data for login
       const foundUser = users.find(u => u.email === email && u.password === password);
       
       if (foundUser) {
+        // Check if user account is active
+        if (foundUser.status !== 'active') {
+          toast.error('Tài khoản của bạn đã bị tạm khóa!');
+          return { success: false, error: 'Account inactive' };
+        }
+
         const userWithoutPassword = { ...foundUser };
         delete userWithoutPassword.password;
         
@@ -57,9 +84,6 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      // Simulate API call - replace with actual backend call
-      const users = JSON.parse(localStorage.getItem('cinema_users') || '[]');
-      
       // Check if email already exists
       const existingUser = users.find(u => u.email === userData.email);
       if (existingUser) {
@@ -67,15 +91,15 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: 'Email already exists' };
       }
 
-      // Add new user
-      const newUser = {
-        id: Date.now().toString(),
-        ...userData,
-        createdAt: new Date().toISOString()
-      };
-      
-      users.push(newUser);
-      localStorage.setItem('cinema_users', JSON.stringify(users));
+      // Add user to UserContext (this will handle localStorage automatically)
+      const newUser = await addUser({
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
+        phone: userData.phone || '',
+        role: 'user',
+        status: 'active'
+      });
       
       // Auto login after registration
       const userWithoutPassword = { ...newUser };

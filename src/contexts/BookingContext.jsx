@@ -21,72 +21,8 @@ export const BookingProvider = ({ children }) => {
       }
     }
     
-    // Default bookings
-    return [
-      {
-        id: 1,
-        userId: 'user_1',
-        movieId: 1,
-        theaterId: 1,
-        showtimeId: 1,
-        bookingDate: '2024-12-19',
-        showDate: '2024-12-20',
-        showTime: '14:30',
-        seats: ['A1', 'A2'],
-        totalAmount: 160000,
-        status: 'confirmed',
-        paymentStatus: 'paid',
-        paymentMethod: 'credit_card',
-        createdAt: '2024-12-19T10:00:00Z',
-        customerInfo: {
-          name: 'Nguyễn Văn A',
-          email: 'nguyenvana@email.com',
-          phone: '0123456789'
-        }
-      },
-      {
-        id: 2,
-        userId: 'user_2',
-        movieId: 2,
-        theaterId: 2,
-        showtimeId: 3,
-        bookingDate: '2024-12-20',
-        showDate: '2024-12-21',
-        showTime: '19:30',
-        seats: ['B5', 'B6', 'B7'],
-        totalAmount: 360000,
-        status: 'confirmed',
-        paymentStatus: 'paid',
-        paymentMethod: 'bank_transfer',
-        createdAt: '2024-12-20T14:30:00Z',
-        customerInfo: {
-          name: 'Trần Thị B',
-          email: 'tranthib@email.com',
-          phone: '0987654321'
-        }
-      },
-      {
-        id: 3,
-        userId: 'user_3',
-        movieId: 1,
-        theaterId: 1,
-        showtimeId: 2,
-        bookingDate: '2024-12-20',
-        showDate: '2024-12-20',
-        showTime: '17:00',
-        seats: ['C10'],
-        totalAmount: 100000,
-        status: 'pending',
-        paymentStatus: 'pending',
-        paymentMethod: 'cash',
-        createdAt: '2024-12-20T12:15:00Z',
-        customerInfo: {
-          name: 'Lê Văn C',
-          email: 'levanc@email.com',
-          phone: '0369258147'
-        }
-      }
-    ];
+    // No default sample data - start with empty array
+    return [];
   });
 
   useEffect(() => {

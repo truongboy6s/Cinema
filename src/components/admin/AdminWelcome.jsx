@@ -15,12 +15,23 @@ import { useMovies } from '../../contexts/MovieContext';
 import { useShowtimes } from '../../contexts/ShowtimeContext';
 import { useTheaters } from '../../contexts/TheaterContext';
 import { useBookings } from '../../contexts/BookingContext';
+import { useUsers } from '../../contexts/UserContext';
 
 const AdminWelcome = () => {
   const { movies } = useMovies();
   const { showtimes } = useShowtimes();
   const { theaters } = useTheaters();
   const { bookings } = useBookings();
+  const { users, getUserStats } = useUsers();
+
+  // User statistics
+  const userStats = getUserStats() || {
+    totalUsers: 0,
+    activeUsers: 0,
+    inactiveUsers: 0,
+    newToday: 0,
+    totalBookings: 0
+  };
 
   // Calculate real stats
   const todayShowtimes = showtimes.filter(showtime => {
@@ -57,6 +68,13 @@ const AdminWelcome = () => {
 
   const stats = [
     { 
+      icon: Users, 
+      label: 'Tổng người dùng', 
+      value: (userStats?.totalUsers || 0).toString(), 
+      change: (userStats?.newToday || 0) > 0 ? `+${userStats.newToday} hôm nay` : 'Không có mới', 
+      color: 'text-emerald-400' 
+    },
+    { 
       icon: Film, 
       label: 'Tổng phim', 
       value: movies.length.toString(), 
@@ -71,26 +89,20 @@ const AdminWelcome = () => {
       color: 'text-green-400' 
     },
     { 
-      icon: Calendar, 
-      label: 'Suất chiếu hôm nay', 
-      value: todayShowtimes.length.toString(), 
-      change: '+8%', 
-      color: 'text-purple-400' 
-    },
-    { 
       icon: DollarSign, 
       label: 'Doanh thu', 
       value: new Intl.NumberFormat('vi-VN', { 
         style: 'currency', 
         currency: 'VND',
         notation: 'compact'
-      }).format(revenueStats.totalRevenue), 
-      change: '+15%', 
+      }).format(revenueStats?.totalRevenue || 0), 
+      change: `${revenueStats?.confirmedBookings || 0} đơn đặt`, 
       color: 'text-yellow-400' 
     }
   ];
 
   const quickActions = [
+    { icon: Users, label: 'Quản lý người dùng', path: '/admin/users', color: 'from-emerald-500 to-teal-500' },
     { icon: Film, label: 'Quản lý phim', path: '/admin/movies', color: 'from-blue-500 to-cyan-500' },
     { icon: Calendar, label: 'Lịch chiếu', path: '/admin/showtimes', color: 'from-green-500 to-emerald-500' },
     { icon: MapPin, label: 'Rạp chiếu', path: '/admin/theaters', color: 'from-purple-500 to-pink-500' },

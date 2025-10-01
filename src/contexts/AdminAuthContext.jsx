@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { adminAPI } from '../services/apiServices';
 
 const AdminAuthContext = createContext();
 
@@ -39,24 +40,46 @@ export const AdminAuthProvider = ({ children }) => {
 
   const adminLogin = async (email, password) => {
     try {
-      // Demo admin accounts
+      console.log('🔐 Attempting backend API login...');
+      
+      // Try backend API first (real JWT authentication)
+      const response = await adminAPI.login({ email, password });
+      
+      if (response.success) {
+        console.log('✅ Backend API login successful');
+        const adminUserData = response.data.user;
+        adminUserData.token = response.data.token;
+        
+        setAdminUser(adminUserData);
+        localStorage.setItem('cinema_admin', JSON.stringify(adminUserData));
+        localStorage.setItem('cinema_admin_token', response.data.token);
+        return true;
+      }
+      
+      console.log('❌ Backend API login failed');
+      return false;
+    } catch (error) {
+      console.error('❌ Admin login error:', error);
+      
+      // Fallback to demo accounts for development
+      console.log('🔄 Trying demo accounts as fallback...');
       const demoAdminAccounts = [
         { email: 'admin@cinema.com', password: 'admin123', fullName: 'Cinema Administrator' },
         { email: 'demo@admin.com', password: 'demo123', fullName: 'Demo Administrator' }
       ];
 
-      // Try demo accounts first
       const demoAdmin = demoAdminAccounts.find(
         admin => admin.email === email && admin.password === password
       );
 
       if (demoAdmin) {
+        console.log('⚠️ Using demo admin account (development only)');
         const adminUserData = {
           id: 'admin_' + Date.now(),
           fullName: demoAdmin.fullName,
           email: demoAdmin.email,
           role: 'admin',
-          token: 'admin_token_' + Date.now()
+          token: 'demo_admin_token_' + Date.now()
         };
 
         setAdminUser(adminUserData);
@@ -65,30 +88,7 @@ export const AdminAuthProvider = ({ children }) => {
         
         return true;
       }
-
-      // Try backend API (will create this endpoint)
-      const response = await fetch('http://localhost:5000/api/auth/admin-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (data.success) {
-          setAdminUser(data.data.user);
-          localStorage.setItem('cinema_admin', JSON.stringify(data.data.user));
-          localStorage.setItem('cinema_admin_token', data.data.token);
-          return true;
-        }
-      }
-
-      return false;
-    } catch (error) {
-      console.error('Admin login error:', error);
+      
       return false;
     }
   };

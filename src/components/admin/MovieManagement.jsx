@@ -28,6 +28,7 @@ const MovieManagement = () => {
     switch (status) {
       case 'showing':
         return 'bg-green-500/20 text-green-400';
+      case 'upcoming':
       case 'coming-soon':
         return 'bg-yellow-500/20 text-yellow-400';
       case 'ended':
@@ -41,6 +42,7 @@ const MovieManagement = () => {
     switch (status) {
       case 'showing':
         return 'Đang chiếu';
+      case 'upcoming':
       case 'coming-soon':
         return 'Sắp chiếu';
       case 'ended':
@@ -57,25 +59,78 @@ const MovieManagement = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (editingMovie) {
-      updateMovie(editingMovie.id, {
-        ...formData,
-        duration: parseInt(formData.duration),
-        rating: parseFloat(formData.rating),
-        release_date: formData.releaseDate
-      });
+      // Map frontend status to backend enum values
+      const statusMapping = {
+        'showing': 'showing',
+        'coming-soon': 'upcoming', 
+        'ended': 'ended'
+      };
+
+      const movieData = {
+        title: formData.title,
+        overview: formData.overview || 'Chưa có mô tả',
+        release_date: new Date(formData.releaseDate).toISOString(),
+        runtime: parseInt(formData.duration) || 0,
+        duration: parseInt(formData.duration) || 0,
+        genre: formData.genre,
+        rating: parseFloat(formData.rating) || 0,
+        vote_average: parseFloat(formData.rating) || 0,
+        status: statusMapping[formData.status] || 'showing',
+        poster: formData.poster || '/placeholder-poster.svg',
+        backdrop_path: formData.backdrop_path || '/placeholder-backdrop.svg',
+        language: 'en', // Use supported language code
+        original_language: 'en'
+      };
+      updateMovie(editingMovie.id, movieData);
       setEditingMovie(null);
     } else {
-      addMovie({
-        ...formData,
-        duration: parseInt(formData.duration),
-        rating: parseFloat(formData.rating),
-        release_date: formData.releaseDate,
-        vote_average: parseFloat(formData.rating),
-        runtime: parseInt(formData.duration)
-      });
+      // Validate required fields
+      if (!formData.title || !formData.genre || !formData.duration || !formData.releaseDate) {
+        alert('Vui lòng điền đầy đủ thông tin: Tên phim, Thể loại, Thời lượng, Ngày khởi chiếu');
+        return;
+      }
+
+      // Map frontend status to backend enum values
+      const statusMapping = {
+        'showing': 'showing',
+        'coming-soon': 'upcoming', 
+        'ended': 'ended'
+      };
+
+      const movieData = {
+        title: formData.title,
+        overview: formData.overview || 'Chưa có mô tả',
+        release_date: new Date(formData.releaseDate).toISOString(),
+        runtime: parseInt(formData.duration) || 0,
+        duration: parseInt(formData.duration) || 0,
+        genre: formData.genre,
+        rating: parseFloat(formData.rating) || 0,
+        vote_average: parseFloat(formData.rating) || 0,
+        status: statusMapping[formData.status] || 'showing',
+        poster: formData.poster || '/placeholder-poster.svg',
+        backdrop_path: formData.backdrop_path || '/placeholder-backdrop.svg',
+        language: 'en', // Use supported language code
+        original_language: 'en'
+      };
+      console.log('🎬 Form data being sent:', movieData);
+      
+      // Test API connection first
+      try {
+        const testResponse = await fetch('http://localhost:5000/api/movies/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(movieData)
+        });
+        const testResult = await testResponse.json();
+        console.log('🧪 Test API response:', testResult);
+      } catch (testError) {
+        console.log('🧪 Test API failed:', testError);
+      }
+      
+      addMovie(movieData);
     }
     setFormData({
       title: '',

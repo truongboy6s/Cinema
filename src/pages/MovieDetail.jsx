@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { dummyShowsData, dummyTrailers, dummyDateTimeData } from '../assets/assets';
+import { dummyTrailers, dummyDateTimeData } from '../assets/assets';
 import { Star, Clock, MapPin, Ticket, Play, Loader2, Heart, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import BlurCircle from '../components/BlurCircle';
 import MovieCard from '../components/MovieCard';
+import { useMovies } from '../contexts/MovieContext';
+import { getBackdropUrl } from '../utils/imageUtils';
 
 const MovieDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { movies, loading: moviesLoading } = useMovies();
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -17,14 +20,14 @@ const MovieDetail = () => {
 
   // Fetch movie data based on ID and check favorite status
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const selectedMovie = dummyShowsData.find((m) => m._id === id);
+    if (!moviesLoading && movies.length > 0) {
+      const selectedMovie = movies.find((m) => m._id === id);
       setMovie(selectedMovie || null);
       const favorites = JSON.parse(localStorage.getItem('yeuThichPhim')) || [];
       setIsFavorite(favorites.some(f => f._id === id));
       
       // Simulate related movies (e.g., same genres or random slice excluding current)
-      const related = dummyShowsData.filter(m => m._id !== id).slice(0, 4);
+      const related = movies.filter(m => m._id !== id).slice(0, 4);
       setRelatedMovies(related);
       
       // Generate available dates (7 days from today)
@@ -39,10 +42,8 @@ const MovieDetail = () => {
       setSelectedDate(dates[0]); // Default to today
       
       setLoading(false);
-    }, 800);
-
-    return () => clearTimeout(timer);
-  }, [id]);
+    }
+  }, [id, movies, moviesLoading]);
 
   // Toggle favorite
   const toggleFavorite = () => {
@@ -135,7 +136,7 @@ const MovieDetail = () => {
         <div className="mb-12">
           <div className="flex flex-col lg:flex-row items-center gap-8">
             <img
-              src={movie.backdrop_path}
+              src={getBackdropUrl(movie)}
               alt={`Poster phim ${movie.title}`}
               className="w-full lg:w-1/3 rounded-xl shadow-2xl object-cover h-96"
               loading="lazy"

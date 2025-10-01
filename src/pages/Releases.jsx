@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { dummyShowsData, dummyDateTimeData } from '../assets/assets';
+import { dummyDateTimeData } from '../assets/assets';
 import { Calendar, Clock, Ticket, Loader2, Search, X } from 'lucide-react';
 import BlurCircle from '../components/BlurCircle';
 import { useNavigate } from 'react-router-dom';
+import { useMovies } from '../contexts/MovieContext';
+import { getBackdropUrl } from '../utils/imageUtils';
 
 const Releases = () => {
   const navigate = useNavigate();
+  const { movies, loading: moviesLoading } = useMovies();
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredShows, setFilteredShows] = useState([]);
@@ -13,20 +16,22 @@ const Releases = () => {
 
   // Prepare show data by mapping dates and times to movies
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const preparedData = {};
-      Object.keys(dummyDateTimeData).forEach((date) => {
-        preparedData[date] = dummyDateTimeData[date].map((show, index) => ({
-          ...show,
-          movie: dummyShowsData[index % dummyShowsData.length], // Cycle through movies for demo
-        }));
-      });
-      setShowData(preparedData);
-      setLoading(false);
-    }, 800);
+    if (!moviesLoading && movies.length > 0) {
+      const timer = setTimeout(() => {
+        const preparedData = {};
+        Object.keys(dummyDateTimeData).forEach((date) => {
+          preparedData[date] = dummyDateTimeData[date].map((show, index) => ({
+            ...show,
+            movie: movies[index % movies.length], // Cycle through movies from MongoDB
+          }));
+        });
+        setShowData(preparedData);
+        setLoading(false);
+      }, 800);
 
-    return () => clearTimeout(timer);
-  }, []);
+      return () => clearTimeout(timer);
+    }
+  }, [movies, moviesLoading]);
 
   // Filter shows based on search query (by movie title)
   useEffect(() => {
@@ -119,7 +124,7 @@ const Releases = () => {
                   {shows.map((show, index) => (
                     <div key={index} className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
                       <img
-                        src={show.movie.backdrop_path}
+                        src={getBackdropUrl(show.movie)}
                         alt={`${show.movie.title} poster`}
                         className="w-full h-48 object-cover rounded-xl mb-4"
                         loading="lazy"
