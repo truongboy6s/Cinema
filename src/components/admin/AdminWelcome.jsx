@@ -34,17 +34,17 @@ const AdminWelcome = () => {
   };
 
   // Calculate real stats
-  const todayShowtimes = showtimes.filter(showtime => {
+  const todayShowtimes = (showtimes || []).filter(showtime => {
     const today = new Date();
     const showtimeDate = new Date(showtime.datetime);
     return showtimeDate.toDateString() === today.toDateString();
   });
 
-  const activeTheaters = theaters.filter(theater => theater.status === 'active');
+  const activeTheaters = (theaters || []).filter(theater => theater && theater.status === 'active');
 
   // Revenue statistics with seat calculation
   const revenueStats = useMemo(() => {
-    const confirmedBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed');
+    const confirmedBookings = (bookings || []).filter(b => b.status === 'confirmed' || b.status === 'completed');
     const totalRevenue = confirmedBookings.reduce((sum, b) => sum + b.totalAmount, 0);
     const totalSeats = confirmedBookings.reduce((sum, b) => sum + (b.seats?.length || 0), 0);
     
@@ -66,6 +66,25 @@ const AdminWelcome = () => {
     };
   }, [bookings]);
 
+  // Thống kê phim theo trạng thái
+  const movieStats = useMemo(() => {
+    const today = new Date();
+    const movieArray = movies || [];
+    const showingMovies = movieArray.filter(movie => movie.status === 'showing').length;
+    const comingSoonMovies = movieArray.filter(movie => {
+      if (movie.status === 'coming_soon') return true;
+      // Nếu release_date trong tương lai thì cũng là sắp chiếu
+      if (movie.release_date) {
+        const releaseDate = new Date(movie.release_date);
+        return releaseDate > today;
+      }
+      return false;
+    }).length;
+    const endedMovies = movieArray.filter(movie => movie.status === 'ended').length;
+    
+    return { showingMovies, comingSoonMovies, endedMovies, total: movieArray.length };
+  }, [movies]);
+
   const stats = [
     { 
       icon: Users, 
@@ -76,9 +95,9 @@ const AdminWelcome = () => {
     },
     { 
       icon: Film, 
-      label: 'Tổng phim', 
-      value: movies.length.toString(), 
-      change: '+' + Math.round((movies.length / 10) * 100) + '%', 
+      label: 'Phim đang chiếu', 
+      value: movieStats.showingMovies.toString(), 
+      change: movieStats.comingSoonMovies > 0 ? `${movieStats.comingSoonMovies} sắp chiếu` : 'Không có sắp chiếu', 
       color: 'text-blue-400' 
     },
     { 
@@ -144,6 +163,29 @@ const AdminWelcome = () => {
             </div>
           );
         })}
+      </div>
+
+      {/* Movie Statistics Detail */}
+      <div className="glass-card rounded-xl p-6 border border-gray-700">
+        <h2 className="text-xl font-bold text-white mb-6">Thống kê phim chi tiết</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+            <div className="text-2xl font-bold text-blue-400">{movieStats.showingMovies}</div>
+            <div className="text-sm text-gray-400">Đang chiếu</div>
+          </div>
+          <div className="text-center p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+            <div className="text-2xl font-bold text-yellow-400">{movieStats.comingSoonMovies}</div>
+            <div className="text-sm text-gray-400">Sắp chiếu</div>
+          </div>
+          <div className="text-center p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+            <div className="text-2xl font-bold text-red-400">{movieStats.endedMovies}</div>
+            <div className="text-sm text-gray-400">Đã kết thúc</div>
+          </div>
+          <div className="text-center p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+            <div className="text-2xl font-bold text-emerald-400">{movieStats.total}</div>
+            <div className="text-sm text-gray-400">Tổng cộng</div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

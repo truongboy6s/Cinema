@@ -72,7 +72,7 @@ export const theaterAPI = {
   // Get all theaters
   getAll: () => apiClient.get('/theaters'),
   
-  // Get theater by ID
+  // Get theater by ID  
   getById: (id) => apiClient.get(`/theaters/${id}`),
   
   // Create new theater
@@ -84,8 +84,32 @@ export const theaterAPI = {
   // Delete theater
   delete: (id) => apiClient.delete(`/theaters/${id}`),
   
+  // Get theater statistics
+  getStats: () => apiClient.get('/theaters/stats'),
+  
+  // Get theaters by filter
+  getByFilter: (filters) => apiClient.get('/theaters', { params: filters }),
+  
+  // Search theaters
+  search: (query) => apiClient.get(`/theaters/search?q=${query}`),
+  
+  // Update theater status
+  updateStatus: (id, status) => apiClient.patch(`/theaters/${id}/status`, { status }),
+  
+  // Bulk delete theaters
+  bulkDelete: (theaterIds) => apiClient.delete('/theaters/bulk', { data: { ids: theaterIds } }),
+  
+  // Get theaters by location
+  getByLocation: (location) => apiClient.get(`/theaters/location/${location}`),
+  
+  // Get theaters by capacity range
+  getByCapacity: (minCapacity, maxCapacity) => apiClient.get(`/theaters/capacity?min=${minCapacity}&max=${maxCapacity}`),
+  
   // Get theaters by status
   getByStatus: (status) => apiClient.get(`/theaters?status=${status}`),
+  
+  // Get active theaters only
+  getActive: () => apiClient.get('/theaters?status=active')
 };
 
 // Showtime API functions  
@@ -145,6 +169,8 @@ export const bookingAPI = {
   processPayment: (bookingId, paymentData) => 
     apiClient.post(`/bookings/${bookingId}/payment`, paymentData),
 };
+
+
 
 // Admin API functions
 export const adminAPI = {

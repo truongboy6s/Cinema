@@ -13,6 +13,7 @@ const adminAuthRoutes = require('./routes/adminAuth');
 const userRoutes = require('./routes/users');
 const movieRoutes = require('./routes/movies');
 const bookingRoutes = require('./routes/bookings');
+const theaterRoutes = require('./routes/theaters');
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.use('/api/auth', adminAuthRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/movies', movieRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/theaters', theaterRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

@@ -1,105 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { dummyDateTimeData } from '../assets/assets';
 import { MapPin, Clock, Ticket, Loader2, Search, X } from 'lucide-react';
 import BlurCircle from '../components/BlurCircle';
 import { useNavigate } from 'react-router-dom';
 import { useMovies } from '../contexts/MovieContext';
+import { useTheater } from '../contexts/TheaterContext';
 
-// Function to generate theater data with real movies
-const generateTheaters = (movies) => {
-  if (!movies || movies.length === 0) return [];
-  
-  return [
-    {
-      id: 1,
-      name: 'CGV VivoCity',
-      address: 'Tầng 5, VivoCity, 1058 Nguyễn Văn Linh, Q.7, TP.HCM',
-      location: 'TP. Hồ Chí Minh',
-      image: null,
-      shows: Object.keys(dummyDateTimeData).slice(0, 2).reduce((acc, date) => {
-        acc[date] = dummyDateTimeData[date].map((show, index) => ({
-          ...show,
-          movie: movies[index % movies.length],
-        }));
-        return acc;
-      }, {}),
-    },
-    {
-      id: 2,
-      name: 'Galaxy Quang Trung',
-      address: '190 Quang Trung, P.10, Q.Gò Vấp, TP.HCM',
-      location: 'TP. Hồ Chí Minh',
-      image: null,
-      shows: Object.keys(dummyDateTimeData).slice(2, 4).reduce((acc, date) => {
-        acc[date] = dummyDateTimeData[date].map((show, index) => ({
-          ...show,
-          movie: movies[(index + 1) % movies.length],
-        }));
-        return acc;
-      }, {}),
-    },
-    {
-      id: 3,
-      name: 'BHD Star Cineplex',
-      address: 'Tầng 3, Vincom Center, 72 Lê Thánh Tôn, Q.1, TP.HCM',
-      location: 'TP. Hồ Chí Minh',
-      image: null,
-      shows: Object.keys(dummyDateTimeData).slice(0, 3).reduce((acc, date) => {
-        acc[date] = dummyDateTimeData[date].map((show, index) => ({
-          ...show,
-          movie: movies[(index + 2) % movies.length],
-        }));
-        return acc;
-      }, {}),
-    },
-    {
-      id: 4,
-      name: 'Lotte Cinema Nam Sài Gòn',
-      address: 'Tầng 3, Lotte Mart, 469 Nguyễn Hữu Thọ, Q.7, TP.HCM',
-      location: 'TP. Hồ Chí Minh',
-      image: null,
-      shows: Object.keys(dummyDateTimeData).slice(1, 4).reduce((acc, date) => {
-        acc[date] = dummyDateTimeData[date].map((show, index) => ({
-          ...show,
-          movie: movies[index % movies.length],
-        }));
-        return acc;
-      }, {}),
-    },
-  ];
-};
 
 const Theaters = () => {
   const navigate = useNavigate();
   const { movies, loading: moviesLoading } = useMovies();
-  const [loading, setLoading] = useState(true);
+  const { theaters, loading: theatersLoading, getTheaters, searchTheaters } = useTheater();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredTheaters, setFilteredTheaters] = useState([]);
 
-  // Generate theaters with real movie data
+  // Load theaters on component mount
   useEffect(() => {
-    if (!moviesLoading && movies.length > 0) {
-      const theaters = generateTheaters(movies);
-      setFilteredTheaters(theaters);
-      setLoading(false);
-    } else if (!moviesLoading && movies.length === 0) {
-      setFilteredTheaters([]);
-      setLoading(false);
-    }
-  }, [movies, moviesLoading]);
+    getTheaters().catch(() => {
+      console.log('Backend not available for theaters');
+    });
+  }, []);
 
-  // Filter theaters based on search query (by name or location)
+  // Update filtered theaters when theaters data changes
   useEffect(() => {
-    if (searchQuery) {
-      const result = dummyTheaters.filter((theater) =>
-        theater.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        theater.location.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredTheaters(result);
-    } else {
-      setFilteredTheaters(dummyTheaters);
+    if (!searchQuery) {
+      setFilteredTheaters((theaters || []).filter(theater => theater && theater.status === 'active'));
     }
-  }, [searchQuery]);
+  }, [theaters, searchQuery]);
+
+  // Handle search
+  const handleSearch = async (query) => {
+    setSearchQuery(query);
+    if (query.trim()) {
+      await searchTheaters(query);
+    } else {
+      await getTheaters();
+    }
+  };
+
+  const loading = theatersLoading || moviesLoading;
 
   if (loading) {
     return (
@@ -139,7 +77,7 @@ const Theaters = () => {
           <div className="flex items-center justify-center gap-8 mt-8 text-sm">
             <div className="flex items-center gap-2 text-gray-300">
               <MapPin className="w-4 h-4 text-green-500" />
-              <span>{dummyTheaters.length} rạp</span>
+              <span>{(theaters || []).filter(t => t.status === 'active').length} rạp hoạt động</span>
             </div>
             <div className="flex items-center gap-2 text-gray-300">
               <Clock className="w-4 h-4 text-blue-500" />
@@ -156,12 +94,15 @@ const Theaters = () => {
               type="text"
               placeholder="Tìm kiếm rạp theo tên hoặc vị trí..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-red-500 focus:bg-white/10 transition-all duration-300"
             />
             {searchQuery && (
               <button
-                onClick={() => setSearchQuery('')}
+                onClick={() => {
+                  setSearchQuery('');
+                  getTheaters();
+                }}
                 className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
               >
                 <X className="w-5 h-5" />
@@ -174,42 +115,78 @@ const Theaters = () => {
         {filteredTheaters.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
             {filteredTheaters.map((theater) => (
-              <div key={theater.id} className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
-                {theater.image && (
-                  <img
-                    src={theater.image}
-                    alt={`${theater.name} exterior`}
-                    className="w-full h-48 object-cover rounded-xl mb-4"
-                    loading="lazy"
-                  />
-                )}
-                {!theater.image && (
-                  <div className="w-full h-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl mb-4 flex items-center justify-center">
-                    <div className="text-gray-500 text-center">
-                      <MapPin className="w-8 h-8 mx-auto mb-2" />
-                      <p className="text-sm">Hình ảnh rạp</p>
+              <div key={theater._id} className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
+                <div className="w-full h-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl mb-4 flex items-center justify-center">
+                  <div className="text-gray-500 text-center">
+                    <MapPin className="w-8 h-8 mx-auto mb-2" />
+                    <p className="text-sm">Rạp {theater?.name}</p>
+                  </div>
+                </div>
+                <h3 className="font-semibold text-white text-lg mb-2">{theater?.name}</h3>
+                <p className="text-sm text-gray-400 mb-4 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-green-500" />
+                  {theater?.location?.city && theater?.location?.district 
+                    ? `${theater?.location?.district}, ${theater?.location?.city}`
+                    : theater?.address || 'Địa chỉ chưa cập nhật'
+                  }
+                </p>
+                
+                {/* Theater Info */}
+                <div className="mb-4 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Sức chứa:</span>
+                    <span className="text-white font-medium">{theater?.capacity || 0} ghế</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Số phòng:</span>
+                    <span className="text-white font-medium">{theater.rooms?.length || 0} phòng</span>
+                  </div>
+                  {theater?.facilities && theater.facilities.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-400 mb-1">Tiện ích:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {theater.facilities.slice(0, 3).map((facility, index) => (
+                          <span 
+                            key={index}
+                            className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded"
+                          >
+                            {facility}
+                          </span>
+                        ))}
+                        {theater.facilities.length > 3 && (
+                          <span className="px-2 py-1 bg-gray-500/20 text-gray-400 text-xs rounded">
+                            +{theater.facilities.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {/* Rooms List */}
+                {theater?.rooms && theater.rooms.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-300 mb-2">Phòng chiếu</h4>
+                    <div className="space-y-1">
+                      {theater.rooms.slice(0, 2).map((room, idx) => (
+                        <p key={idx} className="text-xs text-gray-400 flex items-center gap-2">
+                          <Clock className="w-3 h-3 text-blue-500" />
+                          {room?.name}: {room?.capacity} ghế ({room?.type})
+                        </p>
+                      ))}
+                      {theater.rooms.length > 2 && (
+                        <p className="text-xs text-gray-500">
+                          +{theater.rooms.length - 2} phòng khác
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
-                <h3 className="font-semibold text-white text-lg mb-2">{theater.name}</h3>
-                <p className="text-sm text-gray-400 mb-4 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-green-500" />
-                  {theater.address}
-                </p>
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-300 mb-2">Lịch chiếu gần nhất</h4>
-                  {Object.keys(theater.shows).slice(0, 2).map((date, idx) => (
-                    <p key={idx} className="text-xs text-gray-400 flex items-center gap-2">
-                      <Clock className="w-3 h-3 text-blue-500" />
-                      {new Date(date).toLocaleDateString('vi-VN')}: {theater.shows[date].length} suất
-                    </p>
-                  ))}
-                </div>
+                
                 <button
-                  onClick={() => navigate(`/theaters/${theater.id}`)} // Hypothetical detail route
+                  onClick={() => navigate(`/theaters/${theater._id}`)}
                   className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full font-medium text-sm shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
                 >
-                  <Ticket className="w-4 h-4" /> Xem Lịch Chiếu
+                  <Ticket className="w-4 h-4" /> Xem Chi Tiết
                 </button>
               </div>
             ))}

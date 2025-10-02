@@ -67,7 +67,7 @@ const movieSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['upcoming', 'showing', 'ended'],
+    enum: ['upcoming', 'coming_soon', 'showing', 'ended'],
     default: 'showing'
   },
   language: {

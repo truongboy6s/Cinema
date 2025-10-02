@@ -65,7 +65,7 @@ const MovieManagement = () => {
       // Map frontend status to backend enum values
       const statusMapping = {
         'showing': 'showing',
-        'coming-soon': 'upcoming', 
+        'coming-soon': 'coming_soon', 
         'ended': 'ended'
       };
 
@@ -96,7 +96,7 @@ const MovieManagement = () => {
       // Map frontend status to backend enum values
       const statusMapping = {
         'showing': 'showing',
-        'coming-soon': 'upcoming', 
+        'coming-soon': 'coming_soon', 
         'ended': 'ended'
       };
 
@@ -148,12 +148,19 @@ const MovieManagement = () => {
 
   const handleEdit = (movie) => {
     setEditingMovie(movie);
+    // Chuyển đổi ISO date string về format yyyy-MM-dd cho input date
+    const formatDateForInput = (isoString) => {
+      if (!isoString) return '';
+      const date = new Date(isoString);
+      return date.toISOString().split('T')[0];
+    };
+
     setFormData({
       title: movie.title || '',
       genre: movie.genre || '',
       duration: movie.duration?.toString() || '',
       rating: movie.rating?.toString() || '',
-      releaseDate: movie.release_date || '',
+      releaseDate: formatDateForInput(movie.release_date),
       status: movie.status || 'showing',
       poster: movie.poster || '',
       backdrop_path: movie.backdrop_path || '',
@@ -269,7 +276,7 @@ const MovieManagement = () => {
 
                 <div className="flex items-center text-gray-400 text-sm">
                   <Calendar className="w-4 h-4 mr-1" />
-                  {new Date(movie.releaseDate).toLocaleDateString('vi-VN')}
+                  {movie.release_date ? new Date(movie.release_date).toLocaleDateString('vi-VN') : 'Chưa cập nhật'}
                 </div>
               </div>
 
@@ -437,32 +444,6 @@ const MovieManagement = () => {
           </div>
         </div>
       )}
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="glass-card rounded-xl p-6 border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-2">Tổng phim</h3>
-          <p className="text-3xl font-bold text-cyan-400">{movies.length}</p>
-        </div>
-        <div className="glass-card rounded-xl p-6 border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-2">Đang chiếu</h3>
-          <p className="text-3xl font-bold text-green-400">
-            {movies.filter(m => m.status === 'showing').length}
-          </p>
-        </div>
-        <div className="glass-card rounded-xl p-6 border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-2">Sắp chiếu</h3>
-          <p className="text-3xl font-bold text-yellow-400">
-            {movies.filter(m => m.status === 'coming-soon').length}
-          </p>
-        </div>
-        <div className="glass-card rounded-xl p-6 border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-2">Đánh giá TB</h3>
-          <p className="text-3xl font-bold text-yellow-400">
-            {(movies.reduce((acc, m) => acc + m.rating, 0) / movies.length).toFixed(1)}
-          </p>
-        </div>
-      </div>
     </div>
   );
 };
