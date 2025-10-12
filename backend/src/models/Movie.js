@@ -120,7 +120,9 @@ movieSchema.index({ popularity: -1 });
 
 // Virtual for formatted genre string
 movieSchema.virtual('genreString').get(function() {
-  return this.genres.map(g => g.name).join(', ');
+  return this.genres && Array.isArray(this.genres) 
+    ? this.genres.map(g => g.name).join(', ') 
+    : '';
 });
 
 // Pre-save middleware to sync genre fields

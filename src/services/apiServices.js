@@ -137,6 +137,14 @@ export const showtimeAPI = {
   
   // Get showtimes by date
   getByDate: (date) => apiClient.get(`/showtimes?date=${date}`),
+  
+  // Get available time slots for a specific theater, room and date
+  getAvailableTimeSlots: (theaterId, roomId, date, movieId) => 
+    apiClient.get(`/showtimes/available-slots?theaterId=${theaterId}&roomId=${roomId}&date=${date}&movieId=${movieId}`),
+  
+  // Copy showtimes from one date to another
+  copyShowtimes: (fromDate, toDate, theaterId, roomId = null) => 
+    apiClient.post('/showtimes/copy', { fromDate, toDate, theaterId, roomId }),
 };
 
 // Booking API functions

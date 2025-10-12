@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { theaterAPI } from '../services/apiServices';
 
 // Initial state
@@ -282,6 +282,11 @@ export const TheaterProvider = ({ children }) => {
   const getTheater = (id) => {
     return (state.theaters || []).find(theater => theater._id === id);
   };
+
+  // Load theaters on mount
+  useEffect(() => {
+    getTheaters();
+  }, []);
 
   // Context value
   const value = {

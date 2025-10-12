@@ -14,6 +14,7 @@ const userRoutes = require('./routes/users');
 const movieRoutes = require('./routes/movies');
 const bookingRoutes = require('./routes/bookings');
 const theaterRoutes = require('./routes/theaters');
+const showtimeRoutes = require('./routes/showtimes');
 
 const app = express();
 
@@ -64,6 +65,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/movies', movieRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/theaters', theaterRoutes);
+app.use('/api/showtimes', showtimeRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
