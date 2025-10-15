@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSeatBooking } from '../hooks/useSeatBooking';
+import { useBookings } from '../contexts/BookingContext';
+import { useAuth } from '../contexts/AuthContext';
 import BlurCircle from '../components/BlurCircle';
 import BookingHeader from '../components/SeatLayout/BookingHeader';
 import SeatMap from '../components/SeatLayout/SeatMap';
@@ -13,6 +15,12 @@ import PaymentStep from '../components/SeatLayout/PaymentStep';
 
 const SeatLayout = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { addBooking, loading: bookingLoading } = useBookings();
+  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [bookingError, setBookingError] = useState(null);
+  const [createdBooking, setCreatedBooking] = useState(null);
+  
   const {
     movie,
     showDetails,
@@ -22,7 +30,8 @@ const SeatLayout = () => {
     setOccupiedSeats,
     loading,
     bookingStep,
-    setBookingStep
+    setBookingStep,
+    error
   } = useSeatBooking();
 
   const handleSeatClick = (seatId, row) => {
@@ -47,7 +56,80 @@ const SeatLayout = () => {
     setBookingStep('confirm');
   };
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setBookingStep('processing');
+      setBookingError(null);
+
+      // Prepare booking data
+      const seatData = selectedSeats.map(seatId => {
+        const row = seatId.charAt(0);
+        const seatType = getSeatType(row);
+        const price = getSeatPrice(seatType, showDetails?.price || 100000);
+        
+        return {
+          seatNumber: seatId,
+          type: seatType,
+          price: price
+        };
+      });
+
+      const totalAmount = seatData.reduce((sum, seat) => sum + seat.price, 0);
+
+      const bookingData = {
+        showtimeId: showDetails._id,
+        seats: seatData,
+        totalAmount,
+        paymentMethod,
+        customerInfo: {
+          name: user.name,
+          email: user.email,
+          phone: user.phone
+        }
+      };
+
+      console.log('🎫 Creating booking with data:', bookingData);
+
+      // Create booking via API
+      const newBooking = await addBooking(bookingData);
+      setCreatedBooking(newBooking);
+      
+      // Simulate payment processing
+      setTimeout(() => {
+        setBookingStep('success');
+      }, 2000);
+
+    } catch (error) {
+      console.error('❌ Booking failed:', error);
+      setBookingError(error.message || 'Có lỗi xảy ra khi đặt vé');
+      setBookingStep('confirm');
+    }
+  };
+
+  // Helper functions for seat pricing
+  const getSeatType = (row) => {
+    if (['A', 'B'].includes(row)) return 'standard';
+    if (['C', 'D', 'E', 'F'].includes(row)) return 'standard';
+    if (['G', 'H'].includes(row)) return 'vip';
+    if (['I', 'J'].includes(row)) return 'couple';
+    return 'standard';
+  };
+
+  const getSeatPrice = (seatType, basePrice = 100000) => {
+    const multipliers = {
+      standard: 1,
+      vip: 1.3,
+      couple: 1.5
+    };
+    return Math.round(basePrice * (multipliers[seatType] || 1));
+  };
+
+  const handlePaymentOld = () => {
     setBookingStep('payment');
     setTimeout(() => {
       setBookingStep('success');
@@ -89,6 +171,7 @@ const SeatLayout = () => {
         movie={movie}
         showDetails={showDetails}
         selectedSeats={selectedSeats}
+        booking={createdBooking}
         onBackToMovies={handleBackToMovies}
       />
     );
@@ -122,9 +205,18 @@ const SeatLayout = () => {
                   movie={movie}
                   showDetails={showDetails}
                   selectedSeats={selectedSeats}
+                  paymentMethod={paymentMethod}
+                  setPaymentMethod={setPaymentMethod}
+                  error={bookingError}
                 />
               )}
-              {bookingStep === 'payment' && <PaymentStep />}
+              {(bookingStep === 'payment' || bookingStep === 'processing') && (
+                <PaymentStep 
+                  paymentMethod={paymentMethod}
+                  loading={bookingLoading}
+                  step={bookingStep}
+                />
+              )}
             </div>
           </div>
 
@@ -134,9 +226,13 @@ const SeatLayout = () => {
               showDetails={showDetails}
               selectedSeats={selectedSeats}
               bookingStep={bookingStep}
+              loading={bookingLoading}
+              error={bookingError}
               onContinue={handleContinue}
               onPayment={handlePayment}
               onBack={() => setBookingStep('select')}
+              getSeatPrice={getSeatPrice}
+              getSeatType={getSeatType}
             />
           </div>
         </div>

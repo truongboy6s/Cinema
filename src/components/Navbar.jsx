@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import UserProfile from './UserProfile';
+import UserDropdown from './UserDropdown';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -160,18 +161,11 @@ const Navbar = () => {
                   {/* User greeting (desktop only) */}
                   <div className="hidden lg:flex items-center gap-2 text-gray-300">
                     <span className="text-sm">Chào,</span>
-                    <span className="text-white font-medium">{user?.fullName?.split(' ')[0] || 'Bạn'}</span>
+                    <span className="text-white font-medium">{user?.fullName?.split(' ')[0] || user?.name?.split(' ')[0] || 'Bạn'}</span>
                   </div>
                   
-                  {/* Custom User Button */}
-                  <div className="relative group">
-                    <button
-                      onClick={() => setShowUserProfile(true)}
-                      className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-medium hover:scale-105 transition-all duration-300 ring-2 ring-cyan-400/30 hover:ring-cyan-400/50 shadow-lg shadow-cyan-500/25"
-                    >
-                      {user?.fullName?.charAt(0)?.toUpperCase() || 'U'}
-                    </button>
-                  </div>
+                  {/* User Dropdown */}
+                  <UserDropdown />
                 </div>
               )}
 

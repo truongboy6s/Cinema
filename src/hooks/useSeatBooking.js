@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { useMovies } from '../contexts/MovieContext';
+import { useShowtimes } from '../contexts/ShowtimeContext';
+import { bookingAPI } from '../services/apiServices';
 
 export const useSeatBooking = () => {
-  const { movieId, showId } = useParams();
+  const { movieId, showtimeId } = useParams();
   const location = useLocation();
   const { movies, loading: moviesLoading } = useMovies();
+  const { showtimes } = useShowtimes();
   
   const [movie, setMovie] = useState(null);
   const [showDetails, setShowDetails] = useState(null);
@@ -22,46 +25,56 @@ export const useSeatBooking = () => {
           setLoading(true);
           setError(null);
 
-          // Simulate API delay
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-          const selectedMovie = movies.find(m => m._id === movieId);
+          // Get movie from context or location state
+          let selectedMovie = movies.find(m => m._id === movieId || m.id === movieId);
+          if (!selectedMovie && location.state?.movie) {
+            selectedMovie = location.state.movie;
+          }
         
-        if (!selectedMovie) {
-          throw new Error('Movie not found');
-        }
+          if (!selectedMovie) {
+            throw new Error('Movie not found');
+          }
+          setMovie(selectedMovie);
 
-        setMovie(selectedMovie);
+          // Get showtime details
+          let showtimeDetails = null;
+          
+          // Try to find showtime from context first
+          if (showtimeId && showtimes?.length > 0) {
+            showtimeDetails = showtimes.find(s => s._id === showtimeId || s.id === showtimeId);
+          }
+          
+          // If not found, use location state
+          if (!showtimeDetails && location.state?.showtime) {
+            showtimeDetails = location.state.showtime;
+          }
+          
+          // If still not found, create default (for backward compatibility)
+          if (!showtimeDetails) {
+            showtimeDetails = {
+              _id: showtimeId,
+              movieId: selectedMovie._id,
+              date: location.state?.selectedDate || new Date().toISOString().split('T')[0],
+              time: location.state?.selectedTime || "19:30",
+              price: 100000,
+              theaterId: { 
+                name: "CGV Vincom Center", 
+                location: "Hà Nội"
+              },
+              roomId: "Phòng chiếu 1",
+              totalSeats: 120,
+              availableSeats: 100
+            };
+          }
 
-        if (location.state?.selectedDate && location.state?.selectedTime) {
-          setShowDetails({
-            id: showId,
-            movieId: movieId,
-            date: location.state.selectedDate,
-            time: location.state.selectedTime,
-            price: 100000,
-            cinema: "CGV Vincom Center",
-            room: "Phòng chiếu 1"
-          });
-        } else {
-          const today = new Date();
-          setShowDetails({
-            id: showId,
-            movieId: movieId,
-            date: today,
-            time: "19:30",
-            price: 100000,
-            cinema: "CGV Vincom Center",
-            room: "Phòng chiếu 1"
-          });
-        }
+          setShowDetails(showtimeDetails);
 
-        // Simulate occupied seats from API
-        const occupied = generateOccupiedSeats();
-        setOccupiedSeats(occupied);
+          // Load existing bookings for this showtime to determine occupied seats
+          await loadOccupiedSeats(showtimeId);
         
         } catch (err) {
           setError(err.message);
+          console.error('Error loading seat booking data:', err);
         } finally {
           setLoading(false);
         }
@@ -69,7 +82,21 @@ export const useSeatBooking = () => {
     };
 
     loadData();
-  }, [movieId, showId, location.state, movies, moviesLoading]);
+  }, [movieId, showtimeId, location.state, movies, moviesLoading, showtimes]);
+
+  // Load occupied seats from existing bookings
+  const loadOccupiedSeats = async (showtimeId) => {
+    try {
+      // In a real app, we would fetch bookings for this showtime
+      // For now, generate some occupied seats for demo
+      const occupied = generateOccupiedSeats();
+      setOccupiedSeats(occupied);
+    } catch (error) {
+      console.error('Error loading occupied seats:', error);
+      // Fallback to empty occupied seats
+      setOccupiedSeats({});
+    }
+  };
 
   // Generate random occupied seats for demo
   const generateOccupiedSeats = () => {

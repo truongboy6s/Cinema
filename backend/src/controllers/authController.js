@@ -198,6 +198,56 @@ const updateProfile = async (req, res) => {
   }
 };
 
+// Change password
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user._id;
+
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập mật khẩu hiện tại và mật khẩu mới'
+      });
+    }
+
+    // Find user and include password for verification
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy người dùng'
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordCorrect = await user.comparePassword(currentPassword);
+    if (!isCurrentPasswordCorrect) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu hiện tại không đúng'
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Đổi mật khẩu thành công'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server, vui lòng thử lại sau'
+    });
+  }
+};
+
 // Logout user (client-side token removal)
 const logout = async (req, res) => {
   res.status(200).json({
@@ -211,5 +261,6 @@ module.exports = {
   login,
   getProfile,
   updateProfile,
+  changePassword,
   logout
 };

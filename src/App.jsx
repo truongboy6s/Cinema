@@ -8,6 +8,8 @@ import Favorite from './pages/Favorite';
 import Movies from './pages/Movies';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import AccountInfo from './pages/AccountInfo';
+import ChangePassword from './pages/ChangePassword';
 import { Toaster } from 'react-hot-toast';
 import Footer from './components/Footer';
 import Navbar from './components/Navbar';
@@ -70,6 +72,21 @@ const AppContent = () => {
         <Route path='/my-booking' element={
           <ProtectedRoute>
             <MyBooking />
+          </ProtectedRoute>
+        } />
+        <Route path='/history' element={
+          <ProtectedRoute>
+            <MyBooking />
+          </ProtectedRoute>
+        } />
+        <Route path='/account/info' element={
+          <ProtectedRoute>
+            <AccountInfo />
+          </ProtectedRoute>
+        } />
+        <Route path='/account/change-password' element={
+          <ProtectedRoute>
+            <ChangePassword />
           </ProtectedRoute>
         } />
         <Route path='/favorites' element={

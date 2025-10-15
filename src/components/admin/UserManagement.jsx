@@ -1,9 +1,18 @@
-import React, { useState } from 'react';
-import { Search, Plus, Edit, Trash2, Eye, User, Mail, Phone, UserPlus, Users, CheckCircle, XCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Plus, Edit, Trash2, Eye, User, Mail, Phone, UserPlus, Users, RefreshCw } from 'lucide-react';
 import { useUsers } from '../../contexts/UserContext';
 
 const UserManagement = () => {
-  const { users, addUser, updateUser, deleteUser, toggleUserStatus, getUserStats } = useUsers();
+  const { 
+    users, 
+    loading, 
+    addUser, 
+    updateUser, 
+    deleteUser, 
+    getUserStats, 
+    fetchUsers,
+    fetchUserStats
+  } = useUsers();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -16,9 +25,25 @@ const UserManagement = () => {
   });
 
   const filteredUsers = users.filter(user =>
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (user.fullName || user.name)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Fetch data only once when component mounts
+  useEffect(() => {
+    console.log('🔄 UserManagement mounted, fetching users once...');
+    fetchUsers();
+    fetchUserStats();
+  }, []); // Empty dependency array - chỉ chạy 1 lần
+
+  const handleRefresh = () => {
+    toast.info('Đang tải lại dữ liệu người dùng...', {
+      position: "top-right",
+      autoClose: 2000
+    });
+    fetchUsers();
+    fetchUserStats();
+  };
 
   const stats = getUserStats() || {
     totalUsers: 0,
@@ -119,33 +144,13 @@ const UserManagement = () => {
       </div>
 
       {/* User Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-card rounded-xl p-6 border border-gray-700">
           <div className="flex items-center gap-3">
             <Users className="w-8 h-8 text-blue-400" />
             <div>
               <h3 className="text-sm font-medium text-gray-400">Tổng người dùng</h3>
               <p className="text-2xl font-bold text-blue-400">{stats.totalUsers || 0}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="glass-card rounded-xl p-6 border border-gray-700">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="w-8 h-8 text-green-400" />
-            <div>
-              <h3 className="text-sm font-medium text-gray-400">Hoạt động</h3>
-              <p className="text-2xl font-bold text-green-400">{stats.active}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="glass-card rounded-xl p-6 border border-gray-700">
-          <div className="flex items-center gap-3">
-            <XCircle className="w-8 h-8 text-red-400" />
-            <div>
-              <h3 className="text-sm font-medium text-gray-400">Không hoạt động</h3>
-              <p className="text-2xl font-bold text-red-400">{stats.inactiveUsers || 0}</p>
             </div>
           </div>
         </div>
@@ -181,7 +186,6 @@ const UserManagement = () => {
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Liên hệ</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Ngày tham gia</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Đặt vé</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Trạng thái</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Thao tác</th>
               </tr>
             </thead>
@@ -212,19 +216,10 @@ const UserManagement = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-gray-300">
-                    {new Date(user.joinDate).toLocaleDateString('vi-VN')}
+                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : 'Chưa có dữ liệu'}
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-cyan-400 font-medium">{user.bookings} vé</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      user.isActive 
-                        ? 'bg-green-500/20 text-green-400' 
-                        : 'bg-red-500/20 text-red-400'
-                    }`}>
-                      {user.isActive ? 'Hoạt động' : 'Tạm khóa'}
-                    </span>
+                    <span className="text-cyan-400 font-medium">{user.bookings || 0} vé</span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
@@ -234,17 +229,6 @@ const UserManagement = () => {
                         title="Chỉnh sửa"
                       >
                         <Edit className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => toggleUserStatus(user.id)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          user.isActive 
-                            ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
-                            : 'bg-green-600 hover:bg-green-700 text-white'
-                        }`}
-                        title={user.isActive ? 'Tạm khóa' : 'Kích hoạt'}
-                      >
-                        {user.isActive ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                       </button>
                       <button 
                         onClick={() => handleDelete(user.id)}

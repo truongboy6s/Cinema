@@ -283,10 +283,8 @@ export const TheaterProvider = ({ children }) => {
     return (state.theaters || []).find(theater => theater._id === id);
   };
 
-  // Load theaters on mount
-  useEffect(() => {
-    getTheaters();
-  }, []);
+  // Load theaters on mount (removed automatic loading to prevent CORS errors)
+  // Call getTheaters() manually when needed
 
   // Context value
   const value = {

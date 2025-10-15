@@ -149,33 +149,32 @@ export const showtimeAPI = {
 
 // Booking API functions
 export const bookingAPI = {
-  // Get all bookings (admin only)
-  getAll: () => apiClient.get('/bookings'),
+  // Create new booking
+  create: (bookingData) => apiClient.post('/bookings', bookingData),
+  
+  // Get user bookings
+  getUserBookings: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiClient.get(`/bookings/my-bookings${queryString ? '?' + queryString : ''}`);
+  },
   
   // Get booking by ID
   getById: (id) => apiClient.get(`/bookings/${id}`),
   
-  // Create new booking
-  create: (bookingData) => apiClient.post('/bookings', bookingData),
-  
-  // Update booking
-  update: (id, bookingData) => apiClient.put(`/bookings/${id}`, bookingData),
-  
   // Cancel booking
-  cancel: (id) => apiClient.put(`/bookings/${id}/cancel`),
+  cancel: (id) => apiClient.patch(`/bookings/${id}/cancel`),
   
-  // Confirm booking
-  confirm: (id) => apiClient.put(`/bookings/${id}/confirm`),
+  // Admin - Get all bookings
+  getAllBookings: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiClient.get(`/bookings/admin/all${queryString ? '?' + queryString : ''}`);
+  },
   
-  // Get user bookings
-  getUserBookings: () => apiClient.get('/bookings/user'),
-  
-  // Get booking statistics
-  getStats: () => apiClient.get('/bookings/stats'),
-  
-  // Process payment
-  processPayment: (bookingId, paymentData) => 
-    apiClient.post(`/bookings/${bookingId}/payment`, paymentData),
+  // Admin - Get booking statistics
+  getStats: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiClient.get(`/bookings/admin/stats${queryString ? '?' + queryString : ''}`);
+  },
 };
 
 

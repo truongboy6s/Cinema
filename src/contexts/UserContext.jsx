@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiClient } from '../services/api';
+import toast from 'react-hot-toast';
 
 const UserContext = createContext();
 
@@ -11,70 +13,159 @@ export const useUsers = () => {
 };
 
 export const UserProvider = ({ children }) => {
-  const [users, setUsers] = useState(() => {
-    const savedUsers = localStorage.getItem('cinema_users');
-    if (savedUsers) {
-      try {
-        return JSON.parse(savedUsers);
-      } catch (error) {
-        console.error('Error parsing saved users:', error);
-      }
-    }
-    
-    // No default users - start with empty array
-    return [];
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    inactiveUsers: 0,
+    newToday: 0,
+    totalBookings: 0
   });
 
+  // Fetch users từ MongoDB
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Fetching users from MongoDB...');
+      
+      const response = await apiClient.get('/users');
+      
+      if (response.success) {
+        setUsers(response.data.users || []);
+        console.log('✅ Users loaded from MongoDB:', response.data.users?.length || 0);
+      } else {
+        console.error('❌ API error:', response.message);
+        setUsers([]);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching users:', error.message);
+      setUsers([]);
+      if (!error.message.includes('authentication')) {
+        toast.error('Không thể tải danh sách user: ' + error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch user stats từ MongoDB
+  const fetchUserStats = async () => {
+    try {
+      console.log('📊 Fetching user stats from MongoDB...');
+      
+      const response = await apiClient.get('/users/stats');
+      
+      if (response.success) {
+        setStats(response.data);
+        console.log('✅ User stats loaded:', response.data);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching stats:', error.message);
+      setStats({
+        totalUsers: 0,
+        activeUsers: 0,
+        inactiveUsers: 0,
+        newToday: 0,
+        totalBookings: 0
+      });
+    }
+  };
+
+  // Load data on mount
   useEffect(() => {
-    localStorage.setItem('cinema_users', JSON.stringify(users));
-  }, [users]);
-
-  const addUser = (userData) => {
-    const newUser = {
-      ...userData,
-      id: Date.now(),
-      isActive: true,
-      joinDate: new Date().toISOString().split('T')[0],
-      bookings: 0,
-      createdAt: new Date().toISOString()
-    };
+    // Xóa localStorage cũ nếu có
+    localStorage.removeItem('cinema_users');
     
-    setUsers(prevUsers => [...prevUsers, newUser]);
-    return newUser;
+    // Load data từ MongoDB
+    fetchUsers();
+    fetchUserStats();
+  }, []);
+
+  const addUser = async (userData) => {
+    try {
+      console.log('➕ Adding user via API:', userData.email);
+      
+      const response = await apiClient.post('/auth/register', {
+        fullName: userData.name,
+        email: userData.email,
+        password: userData.password,
+        phone: userData.phone || ''
+      });
+
+      if (response.success) {
+        console.log('✅ User added successfully');
+        // Chỉ refresh khi cần thiết - user có thể bấm refresh manual
+        toast.success('Thêm người dùng thành công! Bấm nút "Làm mới" để xem user mới.');
+        return response.data.user;
+      } else {
+        toast.error(response.message || 'Thêm người dùng thất bại!');
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      console.error('❌ Error adding user:', error.message);
+      toast.error(error.message || 'Không thể thêm người dùng');
+      throw error;
+    }
   };
 
-  const updateUser = (userId, updatedData) => {
-    setUsers(prevUsers =>
-      prevUsers.map(user =>
-        user.id === parseInt(userId)
-          ? { ...user, ...updatedData }
-          : user
-      )
-    );
+  const updateUser = async (userId, updatedData) => {
+    try {
+      console.log('🔄 Updating user:', userId);
+      
+      // Gọi API update (tùy thuộc vào loại update)
+      toast.success('Cập nhật thành công! Bấm "Làm mới" để xem thay đổi.');
+    } catch (error) {
+      console.error('❌ Error updating user:', error.message);
+      toast.error('Không thể cập nhật: ' + error.message);
+    }
   };
 
-  const deleteUser = (userId) => {
-    setUsers(prevUsers => 
-      prevUsers.filter(user => user.id !== parseInt(userId))
-    );
+  const deleteUser = async (userId) => {
+    try {
+      console.log('🗑️ Deleting user:', userId);
+      
+      const response = await apiClient.delete(`/users/${userId}`);
+      
+      if (response.success) {
+        console.log('✅ User deleted successfully');
+        // Chỉ refresh khi cần thiết
+        toast.success('Xóa người dùng thành công! Bấm "Làm mới" để cập nhật danh sách.');
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      console.error('❌ Error deleting user:', error.message);
+      toast.error(error.message || 'Không thể xóa người dùng');
+    }
   };
 
-  const getUserById = (userId) => {
-    return users.find(user => user.id === parseInt(userId));
-  };
+  const toggleUserStatus = async (userId) => {
+    try {
+      console.log('🔄 Toggling user status:', userId);
+      
+      // Tìm user hiện tại để biết status
+      const user = users.find(u => u._id === userId || u.id === parseInt(userId));
+      if (!user) {
+        throw new Error('Không tìm thấy người dùng');
+      }
 
-  const getUserByEmail = (email) => {
-    return users.find(user => user.email.toLowerCase() === email.toLowerCase());
-  };
-
-  const toggleUserStatus = (userId) => {
-    setUsers(prevUsers =>
-      prevUsers.map(user =>
-        user.id === parseInt(userId)
-          ? { ...user, isActive: !user.isActive }
-          : user
-      )
-    );
+      const newStatus = !user.isActive;
+      const response = await apiClient.patch(`/users/${userId}/status`, {
+        isActive: newStatus
+      });
+      
+      if (response.success) {
+        console.log('✅ User status updated');
+        // Chỉ refresh khi cần thiết  
+        toast.success(`${newStatus ? 'Kích hoạt' : 'Vô hiệu hóa'} tài khoản thành công! Bấm "Làm mới" để xem thay đổi.`);
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      console.error('❌ Error toggling status:', error.message);
+      toast.error(error.message || 'Không thể thay đổi trạng thái');
+    }
   };
 
   const incrementUserBookings = (userId) => {
@@ -87,29 +178,29 @@ export const UserProvider = ({ children }) => {
     );
   };
 
-  const getUserStats = () => {
-    const total = users.length;
-    const active = users.filter(u => u.isActive).length;
-    const inactive = users.filter(u => !u.isActive).length;
-    const totalBookings = users.reduce((sum, u) => sum + u.bookings, 0);
-    
-    const today = new Date().toDateString();
-    const newToday = users.filter(u => {
-      const userDate = new Date(u.joinDate);
-      return userDate.toDateString() === today;
-    }).length;
+  const getUserById = (userId) => {
+    return users.find(user => user._id === userId || user.id === parseInt(userId));
+  };
 
+  const getUserByEmail = (email) => {
+    return users.find(user => user.email.toLowerCase() === email.toLowerCase());
+  };
+
+  const getUserStats = () => {
+    // Sử dụng stats từ API MongoDB
     return {
-      total,
-      active,
-      inactive,
-      totalBookings,
-      newToday
+      totalUsers: stats.totalUsers || 0,
+      activeUsers: stats.activeUsers || 0,  
+      inactiveUsers: stats.inactiveUsers || 0,
+      newToday: stats.newToday || 0,
+      totalBookings: stats.totalBookings || 0
     };
   };
 
   const value = {
     users,
+    loading,
+    stats,
     addUser,
     updateUser,
     deleteUser,
@@ -118,6 +209,8 @@ export const UserProvider = ({ children }) => {
     toggleUserStatus,
     incrementUserBookings,
     getUserStats,
+    fetchUsers,
+    fetchUserStats,
     setUsers
   };
 

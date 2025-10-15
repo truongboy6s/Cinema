@@ -1,61 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { dummyBookingData } from '../assets/assets';
 import { Ticket, Clock, MapPin, CreditCard, Star, Trash2, Eye, CheckCircle, XCircle, AlertCircle, Calendar, Search, Filter } from 'lucide-react';
 import BlurCircle from '../components/BlurCircle';
 import timeFormat from '../lib/timeFormat';
 import { useMovies } from '../contexts/MovieContext';
+import { useBookings } from '../contexts/BookingContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const MyBooking = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { movies, loading: moviesLoading } = useMovies();
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'paid', 'unpaid', 'cancelled'
+  const { bookings, loading: bookingsLoading, error: bookingsError, cancelBooking } = useBookings();
+  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'confirmed', 'cancelled', 'completed'
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('date_desc'); // 'date_asc', 'date_desc', 'price_asc', 'price_desc'
   const [currentPage, setCurrentPage] = useState(1);
   const bookingsPerPage = 5;
 
-  // Simulate fetching bookings for the current user
+  // Check if user is logged in
   useEffect(() => {
-    if (!moviesLoading && movies.length > 0) {
-      const timer = setTimeout(() => {
-        // Filter dummyBookingData for the current user (assuming user is "GreatStack" for demo)
-        const userBookings = dummyBookingData.filter(booking => booking.user.name === "GreatStack");
-        
-        // Enhance bookings with movie details and add status (for demo, add random statuses)
-        const enhancedBookings = userBookings.map((booking, index) => {
-          const movie = movies.find(m => m._id === booking.show.movie._id);
-          const status = index % 3 === 0 ? 'cancelled' : booking.isPaid ? 'paid' : 'unpaid';
-          const canCancel = !booking.isPaid && new Date(booking.show.showDateTime) > new Date(); // Can cancel if unpaid and future date
-          const canRate = booking.isPaid && new Date(booking.show.showDateTime) < new Date(); // Can rate if paid and past date
-          return { ...booking, movie, status, canCancel, canRate };
-        });
-        
-        setBookings(enhancedBookings);
-        setLoading(false);
-      }, 800);
-
-      return () => clearTimeout(timer);
+    if (!user) {
+      navigate('/login');
     }
-  }, [movies, moviesLoading]);
+  }, [user, navigate]);
 
   // Filter and sort bookings
   const getFilteredBookings = () => {
-    let filtered = bookings;
+    let filtered = bookings || [];
 
     // Filter by status
     if (filterStatus !== 'all') {
-      filtered = filtered.filter(b => b.status === filterStatus);
+      filtered = filtered.filter(b => b.bookingStatus === filterStatus);
     }
 
     // Search by movie title or seats
     if (searchQuery) {
       const lowerQuery = searchQuery.toLowerCase();
       filtered = filtered.filter(b => 
-        b.movie.title.toLowerCase().includes(lowerQuery) ||
-        b.bookedSeats.join(', ').toLowerCase().includes(lowerQuery)
+        b.movieId?.title?.toLowerCase().includes(lowerQuery) ||
+        b.bookingCode?.toLowerCase().includes(lowerQuery) ||
+        b.seats?.map(seat => seat.seatNumber).join(', ').toLowerCase().includes(lowerQuery)
       );
     }
 
@@ -63,13 +48,13 @@ const MyBooking = () => {
     filtered = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case 'date_asc':
-          return new Date(a.show.showDateTime) - new Date(b.show.showDateTime);
+          return new Date(`${a.showDate} ${a.showTime}`) - new Date(`${b.showDate} ${b.showTime}`);
         case 'date_desc':
-          return new Date(b.show.showDateTime) - new Date(a.show.showDateTime);
+          return new Date(`${b.showDate} ${b.showTime}`) - new Date(`${a.showDate} ${a.showTime}`);
         case 'price_asc':
-          return a.amount - b.amount;
+          return a.totalAmount - b.totalAmount;
         case 'price_desc':
-          return b.amount - a.amount;
+          return b.totalAmount - a.totalAmount;
         default:
           return 0;
       }
@@ -86,11 +71,14 @@ const MyBooking = () => {
   );
 
   // Handle cancel booking
-  const handleCancel = (bookingId) => {
+  const handleCancel = async (bookingId) => {
     if (window.confirm('Bạn có chắc muốn hủy vé này?')) {
-      setBookings(prev => prev.map(b => 
-        b._id === bookingId ? { ...b, status: 'cancelled', canCancel: false } : b
-      ));
+      try {
+        await cancelBooking(bookingId);
+        // Success message will be shown by context
+      } catch (error) {
+        alert('Không thể hủy vé: ' + error.message);
+      }
     }
   };
 
@@ -104,13 +92,54 @@ const MyBooking = () => {
     alert(`Xem chi tiết booking ${bookingId}. Có thể navigate đến trang chi tiết.`);
   };
 
-  if (loading) {
+  // Show login prompt if user not logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 pt-24 px-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+            <h2 className="text-white text-xl font-semibold mb-2">Vui lòng đăng nhập</h2>
+            <p className="text-gray-400 mb-4">Bạn cần đăng nhập để xem lịch sử đặt vé</p>
+            <button
+              onClick={() => navigate('/login')}
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Đăng nhập
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (bookingsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 pt-24 px-4">
         <div className="max-w-7xl mx-auto flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
             <h2 className="text-white text-xl font-semibold">Đang tải lịch sử đặt vé...</h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (bookingsError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 pt-24 px-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+            <h2 className="text-white text-xl font-semibold mb-2">Có lỗi xảy ra</h2>
+            <p className="text-gray-400 mb-4">{bookingsError}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Thử lại
+            </button>
           </div>
         </div>
       </div>
@@ -144,9 +173,9 @@ const MyBooking = () => {
                 className="bg-white/10 border border-white/20 rounded-full px-4 py-2 text-white focus:outline-none focus:border-red-500 transition-colors"
               >
                 <option value="all">Tất cả</option>
-                <option value="paid">Đã thanh toán</option>
-                <option value="unpaid">Chưa thanh toán</option>
+                <option value="confirmed">Đã xác nhận</option>
                 <option value="cancelled">Đã hủy</option>
+                <option value="completed">Hoàn thành</option>
               </select>
             </div>
             <select
@@ -180,43 +209,69 @@ const MyBooking = () => {
               <div key={booking._id} className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
                 <div className="flex flex-col md:flex-row gap-6">
                   <img
-                    src={booking.movie.poster_path}
-                    alt={booking.movie.title}
+                    src={booking.movieId?.poster || '/placeholder-poster.svg'}
+                    alt={booking.movieId?.title || 'Movie'}
                     className="w-full md:w-32 h-48 object-cover rounded-lg shadow-md"
                   />
                   <div className="flex-1">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-xl font-bold text-white">{booking.movie.title}</h3>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-xl font-bold text-white">{booking.movieId?.title || 'N/A'}</h3>
                       <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        booking.status === 'paid' ? 'bg-green-500/20 text-green-300' :
-                        booking.status === 'unpaid' ? 'bg-yellow-500/20 text-yellow-300' :
-                        'bg-red-500/20 text-red-300'
+                        booking.bookingStatus === 'confirmed' ? 'bg-green-500/20 text-green-300' :
+                        booking.bookingStatus === 'cancelled' ? 'bg-red-500/20 text-red-300' :
+                        'bg-blue-500/20 text-blue-300'
                       }`}>
-                        {booking.status === 'paid' ? 'Đã thanh toán' :
-                         booking.status === 'unpaid' ? 'Chưa thanh toán' : 'Đã hủy'}
+                        {booking.bookingStatus === 'confirmed' ? 'Đã xác nhận' :
+                         booking.bookingStatus === 'cancelled' ? 'Đã hủy' :
+                         booking.bookingStatus === 'completed' ? 'Hoàn thành' : 'Pending'}
                       </div>
                     </div>
+                    
+                    {/* Booking Code */}
+                    <div className="mb-4">
+                      <span className="text-sm text-gray-400">Mã đặt vé: </span>
+                      <span className="text-sm font-mono text-white bg-gray-700 px-2 py-1 rounded">{booking.bookingCode}</span>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-300 mb-6">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-5 h-5 text-blue-500" />
-                        <span>{new Date(booking.show.showDateTime).toLocaleDateString('vi-VN')}</span>
+                        <span>{new Date(booking.showDate).toLocaleDateString('vi-VN')}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="w-5 h-5 text-blue-500" />
-                        <span>{new Date(booking.show.showDateTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>{booking.showTime}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="w-5 h-5 text-green-500" />
-                        <span>Rạp XYZ - Phòng 1</span>
+                        <span>{booking.theaterId?.name || 'N/A'} - {booking.theaterId?.location || ''}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Ticket className="w-5 h-5 text-purple-500" />
-                        <span>Ghế: {booking.bookedSeats.join(', ')}</span>
+                        <span>Ghế: {booking.seats?.map(seat => seat.seatNumber).join(', ') || 'N/A'}</span>
                       </div>
                     </div>
+
+                    {/* Payment Status */}
+                    <div className="mb-4">
+                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                        booking.paymentStatus === 'paid' ? 'bg-green-500/10 text-green-300' :
+                        booking.paymentStatus === 'pending' ? 'bg-yellow-500/10 text-yellow-300' :
+                        'bg-red-500/10 text-red-300'
+                      }`}>
+                        <CreditCard className="w-4 h-4" />
+                        <span>
+                          {booking.paymentStatus === 'paid' ? 'Đã thanh toán' :
+                           booking.paymentStatus === 'pending' ? 'Chưa thanh toán' :
+                           booking.paymentStatus === 'failed' ? 'Thanh toán thất bại' :
+                           'Đã hoàn tiền'}
+                        </span>
+                      </div>
+                    </div>
+
                     <div className="flex justify-between items-center">
                       <div className="text-lg font-bold text-red-500">
-                        Tổng: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(booking.amount)}
+                        Tổng: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(booking.totalAmount)}
                       </div>
                       <div className="flex gap-3">
                         <button
@@ -226,7 +281,7 @@ const MyBooking = () => {
                         >
                           <Eye className="w-5 h-5" />
                         </button>
-                        {booking.canCancel && (
+                        {booking.bookingStatus === 'confirmed' && (
                           <button
                             onClick={() => handleCancel(booking._id)}
                             className="p-2 bg-red-500/20 hover:bg-red-500/30 rounded-full text-red-300 transition-colors"
@@ -235,9 +290,9 @@ const MyBooking = () => {
                             <Trash2 className="w-5 h-5" />
                           </button>
                         )}
-                        {booking.canRate && (
+                        {booking.bookingStatus === 'completed' && (
                           <button
-                            onClick={() => handleRate(booking.movie._id)}
+                            onClick={() => handleRate(booking.movieId?._id)}
                             className="p-2 bg-yellow-500/20 hover:bg-yellow-500/30 rounded-full text-yellow-300 transition-colors"
                             title="Đánh giá"
                           >

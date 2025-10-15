@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { bookingAPI } from '../services/apiServices';
+import { useAuth } from './AuthContext';
 
 const BookingContext = createContext();
 
@@ -11,73 +13,94 @@ export const useBookings = () => {
 };
 
 export const BookingProvider = ({ children }) => {
-  const [bookings, setBookings] = useState(() => {
-    const savedBookings = localStorage.getItem('cinema_bookings');
-    if (savedBookings) {
-      try {
-        return JSON.parse(savedBookings);
-      } catch (error) {
-        console.error('Error parsing saved bookings:', error);
-      }
-    }
-    
-    // No default sample data - start with empty array
-    return [];
-  });
+  const { user } = useAuth();
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
+  // Fetch user bookings when component mounts or user changes
   useEffect(() => {
-    localStorage.setItem('cinema_bookings', JSON.stringify(bookings));
-  }, [bookings]);
+    if (user && user.id) {
+      fetchUserBookings();
+    } else {
+      // Clear bookings if user is not logged in
+      setBookings([]);
+      setError(null);
+    }
+  }, [user]);
 
-  const addBooking = (bookingData) => {
-    const newBooking = {
-      ...bookingData,
-      id: Date.now(),
-      bookingDate: new Date().toISOString().split('T')[0],
-      status: 'pending',
-      paymentStatus: 'pending'
-    };
-    
-    setBookings(prevBookings => [...prevBookings, newBooking]);
-    return newBooking;
+  // Fetch user bookings from API
+  const fetchUserBookings = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await bookingAPI.getUserBookings();
+      setBookings(response.data);
+    } catch (error) {
+      setError(error.message || 'Lỗi khi lấy danh sách vé đặt');
+      console.error('Error fetching user bookings:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateBooking = (bookingId, updatedData) => {
-    setBookings(prevBookings =>
-      prevBookings.map(booking =>
-        booking.id === bookingId
-          ? { ...booking, ...updatedData }
-          : booking
-      )
-    );
+  // Create new booking
+  const addBooking = async (bookingData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await bookingAPI.create(bookingData);
+      const newBooking = response.data;
+      setBookings(prevBookings => [newBooking, ...prevBookings]);
+      return newBooking;
+    } catch (error) {
+      setError(error.message || 'Lỗi khi đặt vé');
+      console.error('Error creating booking:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateBookingStatus = (bookingId, status) => {
-    setBookings(prevBookings =>
-      prevBookings.map(booking =>
-        booking.id === parseInt(bookingId)
-          ? { ...booking, status }
-          : booking
-      )
-    );
+  // Cancel booking
+  const cancelBooking = async (bookingId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await bookingAPI.cancel(bookingId);
+      const updatedBooking = response.data;
+      
+      setBookings(prevBookings =>
+        prevBookings.map(booking =>
+          booking._id === bookingId || booking.id === bookingId
+            ? { ...booking, ...updatedBooking }
+            : booking
+        )
+      );
+      return updatedBooking;
+    } catch (error) {
+      setError(error.message || 'Lỗi khi hủy vé');
+      console.error('Error cancelling booking:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteBooking = (bookingId) => {
-    setBookings(prevBookings => 
-      prevBookings.filter(booking => booking.id !== bookingId)
-    );
+  // Get booking by ID
+  const getBookingById = async (bookingId) => {
+    try {
+      const response = await bookingAPI.getById(bookingId);
+      return response.data;
+    } catch (error) {
+      console.error('Error getting booking by ID:', error);
+      throw error;
+    }
   };
 
-  const getBookingById = (bookingId) => {
-    return bookings.find(booking => booking.id === parseInt(bookingId));
-  };
-
-  const getBookingsByUser = (userId) => {
-    return bookings.filter(booking => booking.userId === userId);
-  };
-
+  // Helper functions for filtering bookings locally
   const getBookingsByStatus = (status) => {
-    return bookings.filter(booking => booking.status === status);
+    return bookings.filter(booking => booking.bookingStatus === status);
   };
 
   const getBookingsByDate = (date) => {
@@ -85,77 +108,56 @@ export const BookingProvider = ({ children }) => {
   };
 
   const getBookingsByMovie = (movieId) => {
-    return bookings.filter(booking => booking.movieId === parseInt(movieId));
+    return bookings.filter(booking => 
+      booking.movieId?._id === movieId || booking.movieId === movieId
+    );
   };
 
-  const confirmBooking = (bookingId) => {
-    updateBooking(bookingId, { 
-      status: 'confirmed', 
-      paymentStatus: 'paid' 
-    });
-  };
-
-  const cancelBooking = (bookingId) => {
-    updateBooking(bookingId, { 
-      status: 'cancelled',
-      paymentStatus: 'refunded' 
-    });
-  };
-
-  const getTotalRevenue = () => {
-    return bookings
-      .filter(booking => booking.paymentStatus === 'paid')
-      .reduce((total, booking) => total + booking.totalAmount, 0);
-  };
-
+  // Calculate statistics from current bookings
   const getBookingStats = () => {
     const total = bookings.length;
-    const confirmed = bookings.filter(b => b.status === 'confirmed').length;
-    const pending = bookings.filter(b => b.status === 'pending').length;
-    const cancelled = bookings.filter(b => b.status === 'cancelled').length;
-    const completed = bookings.filter(b => b.status === 'completed').length;
-    const revenue = getTotalRevenue();
-
-    // Tính toán số ghế và giá trung bình
+    const confirmed = bookings.filter(b => b.bookingStatus === 'confirmed').length;
+    const cancelled = bookings.filter(b => b.bookingStatus === 'cancelled').length;
+    const completed = bookings.filter(b => b.bookingStatus === 'completed').length;
+    
+    const totalRevenue = bookings
+      .filter(booking => booking.paymentStatus === 'paid')
+      .reduce((total, booking) => total + booking.totalAmount, 0);
+    
     const totalSeats = bookings.reduce((sum, booking) => sum + (booking.seats?.length || 0), 0);
-    const averagePricePerSeat = totalSeats > 0 ? revenue / totalSeats : 0;
+    const averagePricePerSeat = totalSeats > 0 ? totalRevenue / totalSeats : 0;
 
     return {
       total,
       confirmed,
-      pending,
       cancelled,
       completed,
-      revenue,
+      totalRevenue,
       totalSeats,
       averagePricePerSeat
     };
   };
 
   const validateBookingAmount = (seats, totalAmount) => {
-    // Giá cơ bản mỗi ghế (có thể tùy chỉnh theo rạp/phim)
-    const basePrice = 80000; // 80,000 VND mỗi ghế
-    const expectedAmount = seats.length * basePrice;
-    return Math.abs(totalAmount - expectedAmount) < 1000; // Cho phép sai lệch nhỏ
+    const calculatedAmount = seats.reduce((sum, seat) => sum + seat.price, 0);
+    return Math.abs(totalAmount - calculatedAmount) < 1000; // Allow small difference
   };
 
   const value = {
     bookings,
+    loading,
+    error,
     addBooking,
-    updateBooking,
-    updateBookingStatus,
-    deleteBooking,
+    cancelBooking,
     getBookingById,
-    getBookingsByUser,
     getBookingsByStatus,
     getBookingsByDate,
     getBookingsByMovie,
-    confirmBooking,
-    cancelBooking,
-    getTotalRevenue,
     getBookingStats,
     validateBookingAmount,
-    setBookings
+    fetchUserBookings,
+    setBookings,
+    setError
   };
 
   return (

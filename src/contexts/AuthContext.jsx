@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { useUsers } from './UserContext';
+import { apiClient } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -15,111 +15,200 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { addUser, users } = useUsers();
 
-  // Kiểm tra user đã đăng nhập từ localStorage
+  // Kiểm tra user đã đăng nhập từ localStorage và verify token
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('cinema_user');
-      if (storedUser) {
-        const userData = JSON.parse(storedUser);
-        setUser(userData);
+    const checkAuthStatus = async () => {
+      try {
+        const storedUser = localStorage.getItem('cinema_user');
+        const storedToken = localStorage.getItem('cinema_user_token');
+        
+        if (storedUser && storedToken) {
+          // Verify token bằng cách gọi API profile
+          try {
+            const response = await apiClient.get('/auth/profile');
+            if (response.success) {
+              setUser(response.data.user);
+              console.log('✅ Token hợp lệ, user đã đăng nhập:', response.data.user.email);
+            } else {
+              // Token không hợp lệ, xóa storage
+              console.log('❌ Token không hợp lệ, đang xóa storage');
+              localStorage.removeItem('cinema_user');
+              localStorage.removeItem('cinema_user_token');
+              setUser(null);
+            }
+          } catch (error) {
+            // Token hết hạn hoặc không hợp lệ
+            console.error('❌ Lỗi verify token:', error.message);
+            localStorage.removeItem('cinema_user');
+            localStorage.removeItem('cinema_user_token');
+            setUser(null);
+          }
+        } else {
+          console.log('📝 Không có user hoặc token trong localStorage');
+        }
+      } catch (error) {
+        console.error('❌ Lỗi check auth status:', error);
+        localStorage.removeItem('cinema_user');
+        localStorage.removeItem('cinema_user_token');
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading user from localStorage:', error);
-      localStorage.removeItem('cinema_user');
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    checkAuthStatus();
   }, []);
 
-  // Kiểm tra trạng thái user real-time
-  useEffect(() => {
-    if (user && users.length > 0) {
-      const currentUser = users.find(u => u.id === user.id);
-      if (currentUser) {
-        if (currentUser.status !== 'active') {
-          // User bị khóa, tự động logout
-          toast.error('Tài khoản của bạn đã bị tạm khóa!');
-          logout();
-        } else if (currentUser.status !== user.status || currentUser.name !== user.name || currentUser.email !== user.email) {
-          // Chỉ cập nhật khi có thay đổi thực sự
-          const updatedUser = { ...currentUser };
-          delete updatedUser.password;
-          setUser(updatedUser);
-          localStorage.setItem('cinema_user', JSON.stringify(updatedUser));
-        }
-      }
-    }
-  }, [users]);
+
 
   const login = async (email, password) => {
     try {
-      // Use UserContext data for login
-      const foundUser = users.find(u => u.email === email && u.password === password);
+      setLoading(true);
+      console.log('🔐 Đang đăng nhập với email:', email);
       
-      if (foundUser) {
-        // Check if user account is active
-        if (foundUser.status !== 'active') {
-          toast.error('Tài khoản của bạn đã bị tạm khóa!');
-          return { success: false, error: 'Account inactive' };
-        }
+      const response = await apiClient.post('/auth/login', {
+        email,
+        password
+      });
 
-        const userWithoutPassword = { ...foundUser };
-        delete userWithoutPassword.password;
+      if (response.success) {
+        const { user, token } = response.data;
+        console.log('✅ Đăng nhập thành công:', user.email);
+        console.log('🔑 Token nhận được:', token ? 'Yes' : 'No');
         
-        setUser(userWithoutPassword);
-        localStorage.setItem('cinema_user', JSON.stringify(userWithoutPassword));
+        // Lưu user và token vào localStorage
+        setUser(user);
+        localStorage.setItem('cinema_user', JSON.stringify(user));
+        localStorage.setItem('cinema_user_token', token);
+        
         toast.success('Đăng nhập thành công!');
         return { success: true };
       } else {
-        toast.error('Email hoặc mật khẩu không đúng!');
-        return { success: false, error: 'Invalid credentials' };
+        console.log('❌ Đăng nhập thất bại:', response.message);
+        toast.error(response.message || 'Đăng nhập thất bại!');
+        return { success: false, error: response.message };
       }
     } catch (error) {
-      toast.error('Có lỗi xảy ra khi đăng nhập!');
-      return { success: false, error: error.message };
+      console.error('❌ Lỗi đăng nhập:', error);
+      const errorMessage = error.message || 'Có lỗi xảy ra khi đăng nhập!';
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
     }
   };
 
   const register = async (userData) => {
     try {
-      // Check if email already exists
-      const existingUser = users.find(u => u.email === userData.email);
-      if (existingUser) {
-        toast.error('Email đã được sử dụng!');
-        return { success: false, error: 'Email already exists' };
-      }
-
-      // Add user to UserContext (this will handle localStorage automatically)
-      const newUser = await addUser({
-        name: userData.name,
+      setLoading(true);
+      console.log('📝 Đang đăng ký user:', userData.email);
+      
+      const response = await apiClient.post('/auth/register', {
+        fullName: userData.name,
         email: userData.email,
         password: userData.password,
-        phone: userData.phone || '',
-        role: 'user',
-        status: 'active'
+        phone: userData.phone || ''
       });
-      
-      // Auto login after registration
-      const userWithoutPassword = { ...newUser };
-      delete userWithoutPassword.password;
-      
-      setUser(userWithoutPassword);
-      localStorage.setItem('cinema_user', JSON.stringify(userWithoutPassword));
-      
-      toast.success('Đăng ký thành công!');
-      return { success: true };
+
+      if (response.success) {
+        const { user, token } = response.data;
+        console.log('✅ Đăng ký thành công:', user.email);
+        
+        // Lưu user và token vào localStorage
+        setUser(user);
+        localStorage.setItem('cinema_user', JSON.stringify(user));
+        localStorage.setItem('cinema_user_token', token);
+        
+        toast.success('Đăng ký thành công!');
+        return { success: true };
+      } else {
+        console.log('❌ Đăng ký thất bại:', response.message);
+        toast.error(response.message || 'Đăng ký thất bại!');
+        return { success: false, error: response.message };
+      }
     } catch (error) {
-      toast.error('Có lỗi xảy ra khi đăng ký!');
-      return { success: false, error: error.message };
+      console.error('❌ Lỗi đăng ký:', error);
+      const errorMessage = error.message || 'Có lỗi xảy ra khi đăng ký!';
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('cinema_user');
-    toast.success('Đăng xuất thành công!');
+  const logout = async () => {
+    try {
+      // Gọi API logout nếu có token
+      const token = localStorage.getItem('cinema_user_token');
+      if (token) {
+        try {
+          await apiClient.post('/auth/logout');
+          console.log('✅ Đăng xuất API thành công');
+        } catch (error) {
+          console.error('❌ Lỗi logout API:', error);
+          // Vẫn tiếp tục logout local dù API lỗi
+        }
+      }
+    } catch (error) {
+      console.error('❌ Lỗi logout:', error);
+    } finally {
+      // Xóa state local bất kể API response
+      setUser(null);
+      localStorage.removeItem('cinema_user');
+      localStorage.removeItem('cinema_user_token');
+      console.log('🔓 Đã xóa user và token khỏi localStorage');
+      toast.success('Đăng xuất thành công!');
+    }
+  };
+
+  // Update user profile
+  const updateProfile = async (profileData) => {
+    try {
+      if (!user) throw new Error('User not authenticated');
+
+      const response = await apiClient.put('/auth/profile', profileData);
+      
+      if (response.success) {
+        const updatedUser = response.data.user;
+        setUser(updatedUser);
+        localStorage.setItem('cinema_user', JSON.stringify(updatedUser));
+        
+        toast.success('Cập nhật thông tin thành công!');
+        return { success: true };
+      } else {
+        toast.error(response.message || 'Cập nhật thất bại!');
+        return { success: false, error: response.message };
+      }
+    } catch (error) {
+      const errorMessage = error.message || 'Có lỗi xảy ra khi cập nhật thông tin!';
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // Change password
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      if (!user) throw new Error('User not authenticated');
+
+      const response = await apiClient.put('/auth/change-password', {
+        currentPassword,
+        newPassword
+      });
+
+      if (response.success) {
+        toast.success('Đổi mật khẩu thành công!');
+        return { success: true };
+      } else {
+        toast.error(response.message || 'Đổi mật khẩu thất bại!');
+        return { success: false, error: response.message };
+      }
+    } catch (error) {
+      const errorMessage = error.message || 'Có lỗi xảy ra khi đổi mật khẩu!';
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
+    }
   };
 
   const value = {
@@ -127,6 +216,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    updateProfile,
+    changePassword,
     loading,
     isAuthenticated: !!user
   };

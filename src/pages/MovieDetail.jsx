@@ -156,7 +156,7 @@ const MovieDetail = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-green-500" />
-                  <span>{movie.genres.map(g => g.name).join(', ')}</span>
+                  <span>{movie.genres?.map(g => g.name).join(', ') || movie.genre || 'Chưa phân loại'}</span>
                 </div>
               </div>
               <p className="text-gray-400 text-lg leading-relaxed mb-6">
@@ -310,7 +310,7 @@ const MovieDetail = () => {
         <div className="mb-12">
           <h2 className="text-2xl font-bold text-white mb-6">Dàn Diễn Viên</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-            {movie.casts.slice(0, 8).map((cast, index) => (
+            {movie.casts && movie.casts.slice(0, 8).map((cast, index) => (
               <div key={index} className="text-center group">
                 <img
                   src={cast.profile_path}
