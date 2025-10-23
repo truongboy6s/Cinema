@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatPrice, calculateTotal, getSeatTypeLabel, getSeatPrice } from '../../utils/seatUtils';
+import { getPosterUrl } from '../../utils/imageUtils';
 
 const BookingSidebar = ({ 
   movie, 
@@ -19,14 +20,27 @@ const BookingSidebar = ({
       <div className="space-y-4 mb-6">
         <div className="flex gap-3">
           <img 
-            src={movie.poster_path} 
+            src={getPosterUrl(movie)} 
             alt={movie.title}
             className="w-16 h-24 object-cover rounded-lg"
+            onError={(e) => {
+              e.target.src = '/placeholder-poster.svg';
+            }}
           />
           <div className="flex-1">
             <h4 className="font-semibold text-white text-sm mb-1">{movie.title}</h4>
-            <p className="text-gray-400 text-xs">{showDetails.cinema}</p>
-            <p className="text-gray-400 text-xs">{showDetails.room}</p>
+            <p className="text-gray-400 text-xs">
+              {typeof showDetails.cinema === 'string' 
+                ? showDetails.cinema 
+                : showDetails.theaterId?.name || showDetails.theater?.name || 'Cinema'
+              }
+            </p>
+            <p className="text-gray-400 text-xs">
+              {typeof showDetails.room === 'string' 
+                ? showDetails.room 
+                : showDetails.roomId?.name || showDetails.room?.name || showDetails.roomId || 'Phòng chiếu'
+              }
+            </p>
           </div>
         </div>
         

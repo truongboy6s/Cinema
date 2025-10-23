@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check, Download, Calendar, MapPin, Clock, Ticket, Star } from 'lucide-react';
-import { formatDate, formatPrice, calculateTotal } from '../../utils/seatUtils';
+import { formatDate, formatPrice, calculateTotal, getSeatTypeLabel, getSeatPrice } from '../../utils/seatUtils';
+import { getPosterUrl } from '../../utils/imageUtils';
 
 const SuccessScreen = ({ 
   movie, 
@@ -56,9 +57,12 @@ const SuccessScreen = ({
           <div className="border-b border-gray-600 pb-6 mb-6">
             <div className="flex items-center gap-4 mb-4">
               <img 
-                src={movie.poster_path} 
+                src={getPosterUrl(movie)} 
                 alt={movie.title}
                 className="w-16 h-24 object-cover rounded-lg shadow-lg"
+                onError={(e) => {
+                  e.target.src = '/placeholder-poster.svg';
+                }}
               />
               <div className="flex-1 text-left">
                 <h3 className="text-xl font-bold text-white mb-2">{movie.title}</h3>
@@ -108,8 +112,18 @@ const SuccessScreen = ({
                 <MapPin className="w-5 h-5 text-red-400 mt-1 flex-shrink-0" />
                 <div>
                   <p className="text-gray-400 text-sm">Rạp chiếu</p>
-                  <p className="text-white font-medium">{showDetails.cinema}</p>
-                  <p className="text-gray-300 text-sm">{showDetails.room}</p>
+                  <p className="text-white font-medium">
+                    {typeof showDetails.cinema === 'string' 
+                      ? showDetails.cinema 
+                      : showDetails.theaterId?.name || showDetails.theater?.name || 'Cinema'
+                    }
+                  </p>
+                  <p className="text-gray-300 text-sm">
+                    {typeof showDetails.room === 'string' 
+                      ? showDetails.room 
+                      : showDetails.roomId?.name || showDetails.room?.name || showDetails.roomId || 'Phòng chiếu'
+                    }
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">

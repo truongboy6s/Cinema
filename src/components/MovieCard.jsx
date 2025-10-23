@@ -24,6 +24,9 @@ const MovieCard = ({ movie, viewMode = 'grid', onRemove }) => {
         alt={`${movie.title} poster`}
         loading="lazy"
         className="rounded-lg h-56 w-full object-cover cursor-pointer transition-transform group-hover:scale-105"
+        onError={(e) => {
+          e.target.src = '/placeholder-poster.svg';
+        }}
       />
       
       <div className="mt-3 space-y-2">

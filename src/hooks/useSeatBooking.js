@@ -57,6 +57,8 @@ export const useSeatBooking = () => {
               date: location.state?.selectedDate || new Date().toISOString().split('T')[0],
               time: location.state?.selectedTime || "19:30",
               price: 100000,
+              cinema: "CGV Vincom Center",
+              room: "Phòng chiếu 1",
               theaterId: { 
                 name: "CGV Vincom Center", 
                 location: "Hà Nội"

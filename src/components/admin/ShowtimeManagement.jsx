@@ -346,6 +346,20 @@ const ShowtimeManagement = () => {
     );
   });
 
+  // Debug: Log showtime data structure
+  if (filteredShowtimes.length > 0) {
+    console.log('🔍 Debug showtime data:', {
+      firstShowtime: filteredShowtimes[0],
+      theaterId: filteredShowtimes[0].theaterId,
+      roomId: filteredShowtimes[0].roomId,
+      theaters: theaters.map(t => ({ 
+        id: t._id || t.id, 
+        name: t.name, 
+        rooms: t.rooms?.map(r => ({ id: r._id || r.id, name: r.name })) 
+      }))
+    });
+  }
+
   // Format functions
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -355,25 +369,75 @@ const ShowtimeManagement = () => {
   };
 
   const getMovieTitle = (movieData) => {
+    // Nếu movieData đã là object với title
     if (typeof movieData === 'object' && movieData.title) {
       return movieData.title;
     }
-    const movie = movies.find(m => (m._id || m.id) === movieData);
-    return movie?.title || 'Unknown Movie';
+    
+    // Tìm movie theo ID
+    const movie = movies.find(m => {
+      return (m._id && m._id.toString() === movieData.toString()) || 
+             (m.id && m.id.toString() === movieData.toString()) ||
+             m._id === movieData || 
+             m.id === movieData;
+    });
+    
+    return movie?.title || 'Phim không xác định';
   };
 
   const getTheaterName = (theaterData) => {
+    // Nếu theaterData đã là object với name
     if (typeof theaterData === 'object' && theaterData.name) {
       return theaterData.name;
     }
-    const theater = theaters.find(t => (t._id || t.id) === theaterData);
-    return theater?.name || 'Unknown Theater';
+    
+    // Tìm theater theo ID
+    const theater = theaters.find(t => {
+      return (t._id && t._id.toString() === theaterData.toString()) || 
+             (t.id && t.id.toString() === theaterData.toString()) ||
+             t._id === theaterData || 
+             t.id === theaterData;
+    });
+    
+    return theater?.name || 'Rạp không xác định';
   };
 
   const getRoomName = (theaterId, roomId) => {
-    const theater = theaters.find(t => (t._id || t.id) === theaterId);
-    const room = theater?.rooms?.find(r => (r._id || r.id) === roomId);
-    return room?.name || `Phòng ${roomId}`;
+    // Đảm bảo theaterId và roomId tồn tại
+    if (!theaterId || !roomId) {
+      console.log('🔍 Missing theaterId or roomId:', { theaterId, roomId });
+      return `Phòng không xác định`;
+    }
+    
+    // Tìm theater với logic tương tự getTheaterName
+    const theater = theaters.find(t => {
+      return (t._id && t._id.toString() === theaterId.toString()) || 
+             (t.id && t.id.toString() === theaterId.toString()) ||
+             t._id === theaterId || 
+             t.id === theaterId;
+    });
+    
+    if (!theater || !theater.rooms) {
+      console.log('🔍 Theater not found or no rooms:', { theaterId, theater: theater?.name });
+      return `Phòng không xác định`;
+    }
+    
+    // Tìm room trong theater
+    const room = theater.rooms.find(r => {
+      // So sánh cả _id và id, và cả string/ObjectId
+      return (r._id && r._id.toString() === roomId.toString()) || 
+             (r.id && r.id.toString() === roomId.toString()) ||
+             r._id === roomId || 
+             r.id === roomId;
+    });
+    
+    if (room && room.name) {
+      return room.name;
+    }
+    
+    // Fallback: thử tìm theo index hoặc hiển thị thông tin debug
+    console.log('🔍 Room not found. Theater:', theater.name, 'RoomId:', roomId, 'Available rooms:', theater.rooms);
+    return `Phòng không tìm thấy`;
   };
 
   return (

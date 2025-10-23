@@ -1,8 +1,8 @@
 import React from 'react';
-import { getSeatType, getSeatPrice, getSeatTypeLabel, formatPrice } from '../../utils/seatUtils';
+import { getSeatType, getSeatPrice, getSeatTypeLabel, formatPrice, SEAT_CONFIG } from '../../utils/seatUtils';
 
-const Seat = ({ seatId, row, isOccupied, isSelected, basePrice, onClick }) => {
-  const seatType = getSeatType(row);
+const Seat = ({ seatId, row, isOccupied, isSelected, basePrice, seatConfig = SEAT_CONFIG, onClick }) => {
+  const seatType = getSeatType(row, seatConfig);
   const seatNumber = seatId.replace(row, '');
   
   let seatClass = 'w-8 h-8 rounded-sm cursor-pointer transition-all duration-200 flex items-center justify-center text-xs font-bold hover:scale-110 ';
@@ -25,7 +25,7 @@ const Seat = ({ seatId, row, isOccupied, isSelected, basePrice, onClick }) => {
     <div
       className={seatClass}
       onClick={() => !isOccupied && onClick(seatId, row)}
-      title={`${seatId} - ${getSeatTypeLabel(row)} - ${formatPrice(getSeatPrice(row, basePrice))}`}
+      title={`${seatId} - ${getSeatTypeLabel(row, seatConfig)} - ${formatPrice(getSeatPrice(row, basePrice, seatConfig))}`}
     >
       {seatNumber}
     </div>

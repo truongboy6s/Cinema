@@ -1,49 +1,70 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { dummyTrailers, dummyDateTimeData } from '../assets/assets';
+import { dummyTrailers } from '../assets/assets';
 import { Star, Clock, MapPin, Ticket, Play, Loader2, Heart, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import BlurCircle from '../components/BlurCircle';
 import MovieCard from '../components/MovieCard';
 import { useMovies } from '../contexts/MovieContext';
+import { useShowtimes } from '../contexts/ShowtimeContext';
 import { getBackdropUrl } from '../utils/imageUtils';
 
 const MovieDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { movies, loading: moviesLoading } = useMovies();
+  const { showtimes, loading: showtimesLoading } = useShowtimes();
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [relatedMovies, setRelatedMovies] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [availableDates, setAvailableDates] = useState([]);
+  const [movieShowtimes, setMovieShowtimes] = useState([]);
 
   // Fetch movie data based on ID and check favorite status
   useEffect(() => {
-    if (!moviesLoading && movies.length > 0) {
+    if (!moviesLoading && movies.length > 0 && !showtimesLoading) {
       const selectedMovie = movies.find((m) => m._id === id);
       setMovie(selectedMovie || null);
-      const favorites = JSON.parse(localStorage.getItem('yeuThichPhim')) || [];
-      setIsFavorite(favorites.some(f => f._id === id));
       
-      // Simulate related movies (e.g., same genres or random slice excluding current)
-      const related = movies.filter(m => m._id !== id).slice(0, 4);
-      setRelatedMovies(related);
-      
-      // Generate available dates (7 days from today)
-      const dates = [];
-      const today = new Date();
-      for (let i = 0; i < 7; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() + i);
-        dates.push(date);
+      if (selectedMovie) {
+        const favorites = JSON.parse(localStorage.getItem('yeuThichPhim')) || [];
+        setIsFavorite(favorites.some(f => f._id === id));
+        
+        // Get related movies (same genre or random)
+        const related = movies.filter(m => m._id !== id).slice(0, 4);
+        setRelatedMovies(related);
+        
+        // Get showtimes for this movie
+        const movieShowtimesList = showtimes.filter(showtime => 
+          showtime.movieId === id || showtime.movieId?._id === id
+        );
+        setMovieShowtimes(movieShowtimesList);
+        
+        // Get unique dates from showtimes
+        const uniqueDates = [...new Set(movieShowtimesList.map(st => st.date))];
+        const dateObjects = uniqueDates.map(dateStr => new Date(dateStr)).sort((a, b) => a - b);
+        
+        // If no showtimes, generate next 7 days as available
+        if (dateObjects.length === 0) {
+          const dates = [];
+          const today = new Date();
+          for (let i = 0; i < 7; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() + i);
+            dates.push(date);
+          }
+          setAvailableDates(dates);
+          setSelectedDate(dates[0]);
+        } else {
+          setAvailableDates(dateObjects);
+          setSelectedDate(dateObjects[0]);
+        }
       }
-      setAvailableDates(dates);
-      setSelectedDate(dates[0]); // Default to today
       
       setLoading(false);
     }
-  }, [id, movies, moviesLoading]);
+  }, [id, movies, moviesLoading, showtimes, showtimesLoading]);
 
   // Toggle favorite
   const toggleFavorite = () => {
@@ -80,12 +101,24 @@ const MovieDetail = () => {
 
   // Get showtimes for selected date
   const getShowtimesForDate = (date) => {
-    // This would be replaced with actual API call
-    const times = ['10:00', '13:30', '16:00', '19:15', '22:00'];
-    return times.map((time, index) => ({
-      time: time,
-      id: `show_${date.getTime()}_${index}`,
-      available: Math.random() > 0.3 // Randomly simulate availability
+    if (!movieShowtimes || movieShowtimes.length === 0) {
+      return [];
+    }
+
+    const dateString = date.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    const dayShowtimes = movieShowtimes.filter(showtime => {
+      const showtimeDate = new Date(showtime.date).toISOString().split('T')[0];
+      return showtimeDate === dateString;
+    });
+
+    return dayShowtimes.map(showtime => ({
+      ...showtime,
+      time: showtime.time,
+      id: showtime._id,
+      available: showtime.availableSeats > 0,
+      theater: showtime.theaterId?.name || 'Cinema',
+      room: showtime.roomId || 'Phòng chiếu 1',
+      price: showtime.price || 100000
     }));
   };
 
@@ -250,34 +283,50 @@ const MovieDetail = () => {
               <h3 className="text-lg font-semibold text-white mb-4">
                 Suất chiếu ngày {formatDateVietnamese(selectedDate).day} {formatDateVietnamese(selectedDate).month}:
               </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                {currentShowtimes.map((showtime) => (
-                  <button
-                    key={showtime.id}
-                    onClick={() => {
-                      if (showtime.available) {
-                        navigate(`/movies/book/${movie._id}/${showtime.id}`, {
-                          state: {
-                            selectedDate,
-                            selectedTime: showtime.time
-                          }
-                        });
-                      }
-                    }}
-                    disabled={!showtime.available}
-                    className={`p-3 rounded-lg border transition-all duration-300 ${
-                      showtime.available
-                        ? 'bg-green-500/20 border-green-500/50 text-green-300 hover:bg-green-500/30 hover:border-green-500'
-                        : 'bg-gray-500/20 border-gray-500/50 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    <div className="font-semibold">{showtime.time}</div>
-                    <div className="text-xs mt-1">
-                      {showtime.available ? 'Còn chỗ' : 'Hết chỗ'}
-                    </div>
-                  </button>
-                ))}
-              </div>
+              {currentShowtimes.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {currentShowtimes.map((showtime) => (
+                    <button
+                      key={showtime.id}
+                      onClick={() => {
+                        if (showtime.available) {
+                          navigate(`/movies/book/${movie._id}/${showtime.id}`, {
+                            state: {
+                              movie,
+                              showtime,
+                              selectedDate,
+                              selectedTime: showtime.time
+                            }
+                          });
+                        }
+                      }}
+                      disabled={!showtime.available}
+                      className={`p-4 rounded-lg border transition-all duration-300 text-left ${
+                        showtime.available
+                          ? 'bg-green-500/20 border-green-500/50 text-green-300 hover:bg-green-500/30 hover:border-green-500 hover:scale-105'
+                          : 'bg-gray-500/20 border-gray-500/50 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="font-semibold text-lg">{showtime.time}</div>
+                      <div className="text-sm mt-1">{showtime.theater}</div>
+                      <div className="text-xs mt-1">{showtime.room}</div>
+                      <div className="text-sm mt-2 font-medium">
+                        {new Intl.NumberFormat('vi-VN', { 
+                          style: 'currency', 
+                          currency: 'VND' 
+                        }).format(showtime.price)}
+                      </div>
+                      <div className="text-xs mt-1">
+                        {showtime.available ? `Còn ${showtime.availableSeats} chỗ` : 'Hết chỗ'}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-400">Không có suất chiếu nào trong ngày này</p>
+                </div>
+              )}
               
               <div className="mt-4 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
                 <p className="text-blue-300 text-sm">

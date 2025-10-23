@@ -124,9 +124,9 @@ const AppContent = () => {
 const App = () => {
   return (
     <ErrorBoundary>
-      <UserProvider>
-        <AuthProvider>
-          <AdminAuthProvider>
+      <AuthProvider>
+        <AdminAuthProvider>
+          <UserProvider>
             <MovieProvider>
               <ShowtimeProvider>
                 <TheaterProvider>
@@ -136,9 +136,9 @@ const App = () => {
                 </TheaterProvider>
               </ShowtimeProvider>
             </MovieProvider>
-          </AdminAuthProvider>
-        </AuthProvider>
-      </UserProvider>
+          </UserProvider>
+        </AdminAuthProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 };

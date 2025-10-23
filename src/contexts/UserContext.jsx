@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
+import { useAuth } from './AuthContext';
+import { useAdminAuth } from './AdminAuthContext';
 import toast from 'react-hot-toast';
 
 const UserContext = createContext();
@@ -13,6 +15,12 @@ export const useUsers = () => {
 };
 
 export const UserProvider = ({ children }) => {
+  const { user } = useAuth();
+  const { adminUser } = useAdminAuth();
+  
+  // Sử dụng admin user nếu có, nếu không thì dùng regular user
+  const currentUser = adminUser || user;
+  
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({
@@ -23,8 +31,14 @@ export const UserProvider = ({ children }) => {
     totalBookings: 0
   });
 
-  // Fetch users từ MongoDB
+  // Fetch users từ MongoDB (chỉ admin mới được gọi)
   const fetchUsers = async () => {
+    // Kiểm tra quyền admin trước khi gọi API
+    if (!currentUser || currentUser.role !== 'admin') {
+      console.log('⚠️ Access denied: Only admin can fetch users. Current user:', currentUser);
+      return;
+    }
+
     try {
       setLoading(true);
       console.log('🔄 Fetching users from MongoDB...');
@@ -41,7 +55,7 @@ export const UserProvider = ({ children }) => {
     } catch (error) {
       console.error('❌ Error fetching users:', error.message);
       setUsers([]);
-      if (!error.message.includes('authentication')) {
+      if (!error.message.includes('authentication') && !error.message.includes('Access denied')) {
         toast.error('Không thể tải danh sách user: ' + error.message);
       }
     } finally {
@@ -49,8 +63,14 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Fetch user stats từ MongoDB
+  // Fetch user stats từ MongoDB (chỉ admin mới được gọi)
   const fetchUserStats = async () => {
+    // Kiểm tra quyền admin trước khi gọi API
+    if (!currentUser || currentUser.role !== 'admin') {
+      console.log('⚠️ Access denied: Only admin can fetch user stats. Current user:', currentUser);
+      return;
+    }
+
     try {
       console.log('📊 Fetching user stats from MongoDB...');
       
@@ -72,15 +92,18 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Load data on mount
+  // Load data on mount - chỉ gọi khi user là admin
   useEffect(() => {
-    // Xóa localStorage cũ nếu có
-    localStorage.removeItem('cinema_users');
-    
-    // Load data từ MongoDB
-    fetchUsers();
-    fetchUserStats();
-  }, []);
+    // Chỉ load data admin khi user đã được authenticate và là admin
+    if (currentUser && currentUser.role === 'admin') {
+      // Xóa localStorage cũ nếu có
+      localStorage.removeItem('cinema_users');
+      
+      // Load data từ MongoDB (chỉ admin mới được phép)
+      fetchUsers();
+      fetchUserStats();
+    }
+  }, [currentUser]); // Dependency array includes currentUser để re-run khi user thay đổi
 
   const addUser = async (userData) => {
     try {
@@ -110,6 +133,12 @@ export const UserProvider = ({ children }) => {
   };
 
   const updateUser = async (userId, updatedData) => {
+    // Kiểm tra quyền admin
+    if (!currentUser || currentUser.role !== 'admin') {
+      toast.error('Bạn không có quyền cập nhật user');
+      return;
+    }
+
     try {
       console.log('🔄 Updating user:', userId);
       
@@ -122,6 +151,12 @@ export const UserProvider = ({ children }) => {
   };
 
   const deleteUser = async (userId) => {
+    // Kiểm tra quyền admin
+    if (!currentUser || currentUser.role !== 'admin') {
+      toast.error('Bạn không có quyền xóa user');
+      return;
+    }
+
     try {
       console.log('🗑️ Deleting user:', userId);
       
@@ -141,16 +176,22 @@ export const UserProvider = ({ children }) => {
   };
 
   const toggleUserStatus = async (userId) => {
+    // Kiểm tra quyền admin
+    if (!currentUser || currentUser.role !== 'admin') {
+      toast.error('Bạn không có quyền thay đổi trạng thái user');
+      return;
+    }
+
     try {
       console.log('🔄 Toggling user status:', userId);
       
       // Tìm user hiện tại để biết status
-      const user = users.find(u => u._id === userId || u.id === parseInt(userId));
-      if (!user) {
+      const targetUser = users.find(u => u._id === userId || u.id === parseInt(userId));
+      if (!targetUser) {
         throw new Error('Không tìm thấy người dùng');
       }
 
-      const newStatus = !user.isActive;
+      const newStatus = !targetUser.isActive;
       const response = await apiClient.patch(`/users/${userId}/status`, {
         isActive: newStatus
       });

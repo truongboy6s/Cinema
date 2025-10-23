@@ -246,7 +246,7 @@ const MovieManagement = () => {
                 alt={movie.title}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  e.target.src = '/api/placeholder/300/450';
+                  e.target.src = '/placeholder-poster.svg';
                 }}
               />
               <div className="absolute top-3 right-3">

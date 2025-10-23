@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Eye, User, Mail, Phone, UserPlus, Users, RefreshCw } from 'lucide-react';
 import { useUsers } from '../../contexts/UserContext';
+import toast from 'react-hot-toast';
 
 const UserManagement = () => {
   const { 
@@ -64,7 +65,7 @@ const UserManagement = () => {
     e.preventDefault();
     
     if (editingUser) {
-      updateUser(editingUser.id, formData);
+      updateUser(editingUser._id || editingUser.id, formData);
       setEditingUser(null);
     } else {
       addUser(formData);
@@ -82,7 +83,7 @@ const UserManagement = () => {
   const handleEdit = (user) => {
     setEditingUser(user);
     setFormData({
-      name: user.name || '',
+      name: user.fullName || user.name || '',
       email: user.email || '',
       phone: user.phone || '',
       password: ''
@@ -104,22 +105,32 @@ const UserManagement = () => {
           <h1 className="text-2xl font-bold text-white">Quản lý người dùng</h1>
           <p className="text-gray-400">Quản lý tài khoản người dùng hệ thống</p>
         </div>
-        <button 
-          onClick={() => {
-            setEditingUser(null);
-            setFormData({
-              name: '',
-              email: '',
-              phone: '',
-              password: ''
-            });
-            setShowAddForm(true);
-          }}
-          className="flex items-center px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-lg transition-all duration-200"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Thêm người dùng
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleRefresh}
+            className="flex items-center px-4 py-2 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-lg transition-all duration-200"
+            title="Làm mới dữ liệu"
+          >
+            <RefreshCw className="w-5 h-5 mr-2" />
+            Làm mới
+          </button>
+          <button 
+            onClick={() => {
+              setEditingUser(null);
+              setFormData({
+                name: '',
+                email: '',
+                phone: '',
+                password: ''
+              });
+              setShowAddForm(true);
+            }}
+            className="flex items-center px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-lg transition-all duration-200"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Thêm người dùng
+          </button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -190,16 +201,36 @@ const UserManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-800/30 transition-colors">
+              {loading ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-12 text-center">
+                    <div className="flex items-center justify-center">
+                      <RefreshCw className="w-6 h-6 text-cyan-400 animate-spin mr-2" />
+                      <span className="text-gray-400">Đang tải dữ liệu người dùng...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-12 text-center">
+                    <div className="text-gray-400">
+                      <Users className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                      <p className="text-lg mb-2">Chưa có người dùng nào</p>
+                      <p className="text-sm">Bấm "Thêm người dùng" để tạo tài khoản mới</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((user, index) => (
+                <tr key={user._id || user.id || index} className="hover:bg-slate-800/30 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
                         <User className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <p className="text-white font-medium">{user.name}</p>
-                        <p className="text-gray-400 text-sm">ID: #{user.id}</p>
+                        <p className="text-white font-medium">{user.fullName || user.name}</p>
+                        <p className="text-gray-400 text-sm">ID: #{user._id || user.id}</p>
                       </div>
                     </div>
                   </td>
@@ -231,7 +262,7 @@ const UserManagement = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button 
-                        onClick={() => handleDelete(user.id)}
+                        onClick={() => handleDelete(user._id || user.id)}
                         className="p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
                         title="Xóa"
                       >
@@ -240,16 +271,10 @@ const UserManagement = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
-          
-          {filteredUsers.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-lg mb-2">Không tìm thấy người dùng nào</div>
-              <div className="text-gray-500">Thử thay đổi từ khóa tìm kiếm</div>
-            </div>
-          )}
         </div>
       </div>
 

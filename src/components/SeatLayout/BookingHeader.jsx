@@ -20,7 +20,13 @@ const BookingHeader = ({ movie, showDetails, onBack }) => {
           </span>
           <span className="flex items-center gap-1">
             <MapPin className="w-4 h-4" />
-            {showDetails.cinema} - {showDetails.room}
+            {typeof showDetails.cinema === 'string' 
+              ? showDetails.cinema 
+              : showDetails.theaterId?.name || showDetails.theater?.name || 'Cinema'
+            } - {typeof showDetails.room === 'string' 
+              ? showDetails.room 
+              : showDetails.roomId?.name || showDetails.room?.name || showDetails.roomId || 'Phòng chiếu'
+            }
           </span>
         </p>
       </div>

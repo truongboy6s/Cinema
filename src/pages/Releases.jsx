@@ -181,17 +181,17 @@ const Releases = () => {
                           <Clock className="w-4 h-4 text-blue-500" />
                           <span>{show.time.split(' ')[1]?.slice(0, 5) || 'N/A'}</span>
                           <span>•</span>
-                          <span>{show.movie.duration} phút</span>
+                          <span>{show.movie?.duration || 'N/A'} phút</span>
                         </div>
                         
                         <div className="flex items-center gap-2 text-sm text-gray-400">
                           <MapPin className="w-4 h-4 text-green-500" />
-                          <span className="truncate">{show.theater.name}</span>
+                          <span className="truncate">{show.theater?.name || show.theaterId || 'N/A'}</span>
                         </div>
                         
                         <div className="flex items-center gap-2 text-sm text-gray-400">
                           <span className="bg-gray-700 px-2 py-1 rounded text-xs">
-                            Phòng {show.room.name}
+                            Phòng {show.room?.name || show.roomId || 'N/A'}
                           </span>
                           <span className="text-green-400 text-xs">
                             {show.availableSeats}/{show.totalSeats} ghế
@@ -210,7 +210,14 @@ const Releases = () => {
                       </div>
                       
                       <button
-                        onClick={() => navigate(`/seat-layout?showtime=${show.showId}`)}
+                        onClick={() => navigate(`/movies/book/${show.movie._id}/${show.showId}`, {
+                          state: {
+                            movie: show.movie,
+                            showtime: show,
+                            selectedDate: new Date(show.date),
+                            selectedTime: show.time.split(' ')[1]?.slice(0, 5)
+                          }
+                        })}
                         disabled={show.availableSeats === 0}
                         className={`w-full px-4 py-2 rounded-full font-medium text-sm shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 ${
                           show.availableSeats === 0 

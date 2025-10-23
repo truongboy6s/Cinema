@@ -161,6 +161,9 @@ export const bookingAPI = {
   // Get booking by ID
   getById: (id) => apiClient.get(`/bookings/${id}`),
   
+  // Get bookings by showtime ID (to check occupied seats)
+  getByShowtime: (showtimeId) => apiClient.get(`/bookings/showtime/${showtimeId}`),
+  
   // Cancel booking
   cancel: (id) => apiClient.patch(`/bookings/${id}/cancel`),
   

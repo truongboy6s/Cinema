@@ -186,7 +186,7 @@ const SeatLayout = () => {
         <BookingHeader 
           movie={movie}
           showDetails={showDetails}
-          onBack={() => navigate(`/movies/detail/${movie._id}`)}
+          onBack={() => navigate(`/movies/${movie._id}`)}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -197,6 +197,7 @@ const SeatLayout = () => {
                   selectedSeats={selectedSeats}
                   occupiedSeats={occupiedSeats}
                   basePrice={showDetails.price}
+                  totalSeats={showDetails?.totalSeats || 120}
                   onSeatClick={handleSeatClick}
                 />
               )}

@@ -11,8 +11,13 @@ export const processImageUrl = (imageUrl, type = 'poster') => {
     return type === 'backdrop' ? '/placeholder-backdrop.svg' : '/placeholder-poster.svg';
   }
 
-  // Replace via.placeholder.com URLs with local SVG files
-  if (imageUrl.includes('via.placeholder.com')) {
+  // Replace placeholder URLs with local SVG files
+  if (imageUrl.includes('via.placeholder.com') || 
+      imageUrl.includes('/api/placeholder/') ||
+      imageUrl.includes('500x750') ||
+      imageUrl.includes('No+Poster') ||
+      imageUrl.includes('1a1a1a') ||
+      imageUrl.includes('ffffff')) {
     return type === 'backdrop' ? '/placeholder-backdrop.svg' : '/placeholder-poster.svg';
   }
 

@@ -80,7 +80,7 @@ const LoadingScreen = () => {
       </div>
 
       {/* CSS Animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes loading-progress {
           0%, 100% { width: 30%; }
           50% { width: 80%; }

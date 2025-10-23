@@ -2,15 +2,18 @@ import React from 'react';
 import Seat from './Seat';
 import SeatLegend from './SeatLegend';
 import PricingInfo from './PricingInfo';
-import { SEAT_CONFIG } from '../../utils/seatUtils';
+import { calculateSeatConfig } from '../../utils/seatUtils';
 
 const SeatMap = ({ 
   selectedSeats, 
   occupiedSeats, 
-  basePrice, 
+  basePrice,
+  totalSeats = 120, // Nhận từ showtime
   onSeatClick 
 }) => {
-  const { seatRows, seatsPerRow } = SEAT_CONFIG;
+  // Tính toán cấu hình ghế động
+  const seatConfig = calculateSeatConfig(totalSeats);
+  const { seatRows, seatsPerRow } = seatConfig;
 
   return (
     <>
@@ -40,6 +43,7 @@ const SeatMap = ({
                     isOccupied={occupiedSeats[seatId]}
                     isSelected={selectedSeats.includes(seatId)}
                     basePrice={basePrice}
+                    seatConfig={seatConfig}
                     onClick={onSeatClick}
                   />
                 );
@@ -60,6 +64,7 @@ const SeatMap = ({
                     isOccupied={occupiedSeats[seatId]}
                     isSelected={selectedSeats.includes(seatId)}
                     basePrice={basePrice}
+                    seatConfig={seatConfig}
                     onClick={onSeatClick}
                   />
                 );

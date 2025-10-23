@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatDate, formatPrice, calculateTotal, getSeatTypeLabel, getSeatPrice } from '../../utils/seatUtils';
+import { getPosterUrl } from '../../utils/imageUtils';
 import { Check, AlertCircle } from 'lucide-react';
 
 const ConfirmationStep = ({ 
@@ -38,9 +39,12 @@ const ConfirmationStep = ({
         <div className="bg-gray-800/50 rounded-xl p-6 text-left">
           <div className="flex items-start gap-4 mb-4">
             <img 
-              src={movie.poster_path} 
+              src={getPosterUrl(movie)} 
               alt={movie.title}
               className="w-16 h-24 object-cover rounded-lg"
+              onError={(e) => {
+                e.target.src = '/placeholder-poster.svg';
+              }}
             />
             <div className="flex-1">
               <h4 className="font-bold text-white text-lg mb-2">{movie.title}</h4>
@@ -76,11 +80,21 @@ const ConfirmationStep = ({
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-400">Rạp:</span>
-                <span className="text-white font-medium">{showDetails.cinema}</span>
+                <span className="text-white font-medium">
+                  {typeof showDetails.cinema === 'string' 
+                    ? showDetails.cinema 
+                    : showDetails.theaterId?.name || showDetails.theater?.name || 'Cinema'
+                  }
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Phòng:</span>
-                <span className="text-white font-medium">{showDetails.room}</span>
+                <span className="text-white font-medium">
+                  {typeof showDetails.room === 'string' 
+                    ? showDetails.room 
+                    : showDetails.roomId?.name || showDetails.room?.name || showDetails.roomId || 'Phòng chiếu'
+                  }
+                </span>
               </div>
             </div>
           </div>
