@@ -1,16 +1,17 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAdminAuth } from '../contexts/AdminAuthContext';
+import { useAdminAccess } from '../hooks/useAdminAccess';
 import { Loader2 } from 'lucide-react';
 
 const AdminProtectedRoute = ({ children }) => {
-  const { isAdminAuthenticated, adminLoading, adminUser } = useAdminAuth();
+  const { hasAdminAccess, isAdminAuthenticated, adminUser, loading } = useAdminAccess();
   const location = useLocation();
 
   console.log('AdminProtectedRoute - adminUser:', adminUser); // Debug log
+  console.log('AdminProtectedRoute - hasAdminAccess:', hasAdminAccess); // Debug log
   console.log('AdminProtectedRoute - isAdminAuthenticated:', isAdminAuthenticated); // Debug log
 
-  if (adminLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
         <div className="text-center">

@@ -249,7 +249,7 @@ const Navbar = () => {
                   
                   <button
                     onClick={() => {
-                      navigate('/my-booking');
+                      navigate('/history');
                       setIsOpen(false);
                     }}
                     className="w-full flex items-center gap-3 px-4 py-3 mt-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-colors duration-300"

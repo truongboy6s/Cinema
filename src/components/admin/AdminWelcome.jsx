@@ -42,19 +42,44 @@ const AdminWelcome = () => {
 
   const activeTheaters = (theaters || []).filter(theater => theater && theater.status === 'active');
 
-  // Revenue statistics with seat calculation
+  // Revenue statistics with seat calculation - Only count paid bookings
   const revenueStats = useMemo(() => {
-    const confirmedBookings = (bookings || []).filter(b => b.status === 'confirmed' || b.status === 'completed');
-    const totalRevenue = confirmedBookings.reduce((sum, b) => sum + b.totalAmount, 0);
-    const totalSeats = confirmedBookings.reduce((sum, b) => sum + (b.seats?.length || 0), 0);
+    console.log('Calculating revenue stats with bookings:', bookings);
     
-    const todayBookings = confirmedBookings.filter(b => {
+    // Chỉ tính những booking đã thanh toán thành công
+    const paidBookings = (bookings || []).filter(b => {
+      const isPaid = b.paymentStatus === 'paid';
+      const isConfirmedOrCompleted = b.status === 'confirmed' || b.status === 'completed';
+      console.log(`Booking ${b._id}: status=${b.status}, paymentStatus=${b.paymentStatus}, included=${isPaid && isConfirmedOrCompleted}`);
+      return isPaid && isConfirmedOrCompleted;
+    });
+    
+    console.log('Paid bookings:', paidBookings.length, 'out of', (bookings || []).length, 'total bookings');
+    
+    const totalRevenue = paidBookings.reduce((sum, b) => {
+      const amount = b.totalAmount || 0;
+      console.log(`Adding revenue: ${amount} from booking ${b._id}`);
+      return sum + amount;
+    }, 0);
+    
+    const totalSeats = paidBookings.reduce((sum, b) => sum + (b.seats?.length || 0), 0);
+    
+    // Doanh thu hôm nay - chỉ tính booking đã thanh toán
+    const todayPaidBookings = paidBookings.filter(b => {
       const bookingDate = new Date(b.createdAt);
       const today = new Date();
       return bookingDate.toDateString() === today.toDateString();
     });
-    const todayRevenue = todayBookings.reduce((sum, b) => sum + b.totalAmount, 0);
-    const todaySeats = todayBookings.reduce((sum, b) => sum + (b.seats?.length || 0), 0);
+    const todayRevenue = todayPaidBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+    const todaySeats = todayPaidBookings.reduce((sum, b) => sum + (b.seats?.length || 0), 0);
+    
+    console.log('Final revenue stats:', {
+      totalRevenue,
+      todayRevenue,
+      totalSeats,
+      todaySeats,
+      paidBookingsCount: paidBookings.length
+    });
     
     return {
       totalRevenue,
@@ -62,7 +87,7 @@ const AdminWelcome = () => {
       totalSeats,
       todaySeats,
       averageRevenuePerSeat: totalSeats > 0 ? totalRevenue / totalSeats : 0,
-      confirmedBookings: confirmedBookings.length
+      confirmedBookings: paidBookings.length
     };
   }, [bookings]);
 

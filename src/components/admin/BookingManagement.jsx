@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Eye, DollarSign, Calendar, Users, Filter, Download, CheckCircle, XCircle, Clock, CreditCard } from 'lucide-react';
-import { useBookings } from '../../contexts/BookingContext';
+import { useAdminBookings } from '../../contexts/AdminBookingContext';
 import { useMovies } from '../../contexts/MovieContext';
 import { useTheaters } from '../../contexts/TheaterContext';
 import { useShowtimes } from '../../contexts/ShowtimeContext';
 
 const BookingManagement = () => {
-  const { bookings, updateBookingStatus } = useBookings();
+  const { bookings, loading, error, updateBookingStatus, getRevenueStats, searchBookings } = useAdminBookings();
   const { movies } = useMovies();
   const { theaters } = useTheaters();
   const { showtimes } = useShowtimes();
@@ -33,17 +33,20 @@ const BookingManagement = () => {
 
   // Filter bookings
   const filteredBookings = useMemo(() => {
-    return bookings.filter(booking => {
-      const matchesSearch = booking.customerInfo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           booking.customerInfo.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           booking.id.toString().toLowerCase().includes(searchTerm.toLowerCase());
+    let filtered = searchBookings(searchTerm);
+    
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(booking => booking.bookingStatus === statusFilter);
+    }
+    
+    // Filter by date
+    if (dateFilter !== 'all') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
       
-      const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
-      
-      const matchesDate = dateFilter === 'all' || (() => {
-        const bookingDate = new Date(booking.createdAt);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(booking => {
+        const bookingDate = new Date(booking.bookingDate || booking.createdAt);
         
         switch(dateFilter) {
           case 'today':
@@ -59,39 +62,26 @@ const BookingManagement = () => {
           default:
             return true;
         }
-      })();
-      
-      return matchesSearch && matchesStatus && matchesDate;
-    });
-  }, [bookings, searchTerm, statusFilter, dateFilter]);
+      });
+    }
+    
+    return filtered;
+  }, [bookings, searchTerm, statusFilter, dateFilter, searchBookings]);
 
-  // Get movie, theater, and showtime info
+  // Get movie, theater, and showtime info from booking (already populated by API)
   const getBookingDetails = (booking) => {
-    const showtime = showtimes.find(s => s.id === booking.showtimeId);
-    const movie = movies.find(m => m.id === showtime?.movieId);
-    const theater = theaters.find(t => t.id === showtime?.theaterId);
+    // API should populate these fields, so we can use them directly
+    const movie = booking.movieId || null;
+    const theater = booking.theaterId || null;
+    const showtime = booking.showtimeId || null;
     
     return { movie, theater, showtime };
   };
 
   // Revenue statistics
   const revenueStats = useMemo(() => {
-    const confirmedBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed');
-    const totalRevenue = confirmedBookings.reduce((sum, b) => sum + b.totalAmount, 0);
-    const todayBookings = confirmedBookings.filter(b => {
-      const bookingDate = new Date(b.createdAt);
-      const today = new Date();
-      return bookingDate.toDateString() === today.toDateString();
-    });
-    const todayRevenue = todayBookings.reduce((sum, b) => sum + b.totalAmount, 0);
-    
-    return {
-      totalRevenue,
-      todayRevenue,
-      totalBookings: bookings.length,
-      confirmedBookings: confirmedBookings.length
-    };
-  }, [bookings]);
+    return getRevenueStats();
+  }, [getRevenueStats]);
 
   const handleStatusUpdate = (bookingId, newStatus) => {
     updateBookingStatus(bookingId, newStatus);
@@ -128,6 +118,34 @@ const BookingManagement = () => {
         return <Clock className="w-4 h-4 text-gray-400" />;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Đang tải dữ liệu đặt vé...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <p className="text-red-400 mb-4">Lỗi: {error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -250,81 +268,90 @@ const BookingManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredBookings.map((booking) => {
-                const { movie, theater, showtime } = getBookingDetails(booking);
-                
-                return (
-                  <tr key={booking.id} className="border-b border-gray-800 hover:bg-slate-800/30">
-                    <td className="p-4">
-                      <span className="text-cyan-400 font-mono text-sm">
-                        #{booking.id.toString().slice(0, 8)}
-                      </span>
-                    </td>
-                    
-                    <td className="p-4">
-                      <div>
-                        <div className="text-white font-medium">{booking.customerInfo.name}</div>
-                        <div className="text-gray-400 text-sm">{booking.customerInfo.email}</div>
-                        <div className="text-gray-500 text-xs">{booking.customerInfo.phone}</div>
-                      </div>
-                    </td>
-                    
-                    <td className="p-4">
-                      <div className="text-white">{movie?.title || 'N/A'}</div>
-                    </td>
-                    
-                    <td className="p-4">
-                      <div>
-                        <div className="text-white">{theater?.name || 'N/A'}</div>
-                        <div className="text-gray-400 text-sm">
-                          Ghế: {booking.seats?.join(', ') || 'N/A'}
-                        </div>
-                      </div>
-                    </td>
-                    
-                    <td className="p-4">
-                      <div className="text-white text-sm">
-                        {showtime ? formatDate(showtime.datetime) : 'N/A'}
-                      </div>
-                      <div className="text-gray-400 text-xs">
-                        Đặt: {formatDate(booking.createdAt)}
-                      </div>
-                    </td>
-                    
-                    <td className="p-4">
-                      <span className="text-green-400 font-semibold">
-                        {formatCurrency(booking.totalAmount)}
-                      </span>
-                    </td>
-                    
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(booking.status)}
-                        <select
-                          value={booking.status}
-                          onChange={(e) => handleStatusUpdate(booking.id, e.target.value)}
-                          className="bg-slate-800/50 border border-gray-600 rounded px-2 py-1 text-xs text-white"
-                        >
-                          <option value="pending">Chờ xử lý</option>
-                          <option value="confirmed">Đã xác nhận</option>
-                          <option value="completed">Hoàn thành</option>
-                          <option value="cancelled">Đã hủy</option>
-                        </select>
-                      </div>
-                    </td>
-                    
-                    <td className="p-4">
-                      <div className="flex items-center gap-1">
-                        {(() => {
-                          const PaymentIcon = paymentStatusOptions.find(p => p.value === booking.paymentStatus)?.icon || Clock;
-                          const color = paymentStatusOptions.find(p => p.value === booking.paymentStatus)?.color || 'text-gray-400';
-                          return <PaymentIcon className={`w-4 h-4 ${color}`} />;
-                        })()}
-                        <span className={`text-xs ${paymentStatusOptions.find(p => p.value === booking.paymentStatus)?.color || 'text-gray-400'}`}>
-                          {paymentStatusOptions.find(p => p.value === booking.paymentStatus)?.label || booking.paymentStatus}
+              {filteredBookings.length === 0 ? (
+                <tr>
+                  <td colSpan="9" className="p-8 text-center text-gray-400">
+                    Không có dữ liệu đặt vé nào
+                  </td>
+                </tr>
+              ) : (
+                filteredBookings.map((booking) => {
+                  const { movie, theater, showtime } = getBookingDetails(booking);
+                  
+                  return (
+                    <tr key={booking._id || booking.id} className="border-b border-gray-800 hover:bg-slate-800/30">
+                      <td className="p-4">
+                        <span className="text-cyan-400 font-mono text-sm">
+                          {booking.bookingCode || `#${(booking._id || booking.id).toString().slice(-8)}`}
                         </span>
-                      </div>
-                    </td>
+                      </td>
+                      
+                      <td className="p-4">
+                        <div>
+                          <div className="text-white font-medium">{booking.customerInfo?.name || 'N/A'}</div>
+                          <div className="text-gray-400 text-sm">{booking.customerInfo?.email || 'N/A'}</div>
+                          <div className="text-gray-500 text-xs">{booking.customerInfo?.phone || 'N/A'}</div>
+                        </div>
+                      </td>
+                      
+                      <td className="p-4">
+                        <div className="text-white">{movie?.title || 'N/A'}</div>
+                      </td>
+                      
+                      <td className="p-4">
+                        <div>
+                          <div className="text-white">{theater?.name || 'N/A'}</div>
+                          <div className="text-gray-400 text-sm">
+                            Ghế: {booking.seats?.map(seat => seat.seatNumber || seat).join(', ') || 'N/A'}
+                          </div>
+                        </div>
+                      </td>
+                    
+                      <td className="p-4">
+                        <div className="text-white text-sm">
+                          {booking.showDate && booking.showTime ? 
+                            `${booking.showDate} ${booking.showTime}` : 'N/A'
+                          }
+                        </div>
+                        <div className="text-gray-400 text-xs">
+                          Đặt: {booking.bookingDate ? formatDate(booking.bookingDate) : formatDate(booking.createdAt)}
+                        </div>
+                      </td>
+                      
+                      <td className="p-4">
+                        <span className="text-green-400 font-semibold">
+                          {formatCurrency(booking.totalAmount)}
+                        </span>
+                      </td>
+                      
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(booking.bookingStatus)}
+                          <select
+                            value={booking.bookingStatus}
+                            onChange={(e) => handleStatusUpdate(booking._id || booking.id, e.target.value)}
+                            className="bg-slate-800/50 border border-gray-600 rounded px-2 py-1 text-xs text-white"
+                          >
+                            <option value="pending">Chờ xử lý</option>
+                            <option value="confirmed">Đã xác nhận</option>
+                            <option value="completed">Hoàn thành</option>
+                            <option value="cancelled">Đã hủy</option>
+                          </select>
+                        </div>
+                      </td>
+                      
+                      <td className="p-4">
+                        <div className="flex items-center gap-1">
+                          {(() => {
+                            const PaymentIcon = paymentStatusOptions.find(p => p.value === booking.paymentStatus)?.icon || Clock;
+                            const color = paymentStatusOptions.find(p => p.value === booking.paymentStatus)?.color || 'text-gray-400';
+                            return <PaymentIcon className={`w-4 h-4 ${color}`} />;
+                          })()}
+                          <span className={`text-xs ${paymentStatusOptions.find(p => p.value === booking.paymentStatus)?.color || 'text-gray-400'}`}>
+                            {paymentStatusOptions.find(p => p.value === booking.paymentStatus)?.label || booking.paymentStatus}
+                          </span>
+                        </div>
+                      </td>
                     
                     <td className="p-4">
                       <button
@@ -337,7 +364,7 @@ const BookingManagement = () => {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
           

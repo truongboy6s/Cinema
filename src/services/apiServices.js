@@ -178,6 +178,15 @@ export const bookingAPI = {
     const queryString = new URLSearchParams(params).toString();
     return apiClient.get(`/bookings/admin/stats${queryString ? '?' + queryString : ''}`);
   },
+
+  // Get occupied seats for a showtime
+  getOccupiedSeats: (showtimeId) => apiClient.get(`/bookings/showtime/${showtimeId}/occupied-seats`),
+
+  // Simulate payment success
+  simulatePaymentSuccess: (bookingId) => apiClient.post(`/bookings/payment/simulate-success/${bookingId}`),
+
+  // Simulate payment failure
+  simulatePaymentFailure: (bookingId) => apiClient.post(`/bookings/payment/simulate-failure/${bookingId}`),
 };
 
 

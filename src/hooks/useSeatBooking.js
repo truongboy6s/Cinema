@@ -72,7 +72,9 @@ export const useSeatBooking = () => {
           setShowDetails(showtimeDetails);
 
           // Load existing bookings for this showtime to determine occupied seats
-          await loadOccupiedSeats(showtimeId);
+          if (showtimeDetails && (showtimeDetails._id || showtimeDetails.id)) {
+            await loadOccupiedSeats(showtimeDetails._id || showtimeDetails.id);
+          }
         
         } catch (err) {
           setError(err.message);
@@ -89,38 +91,36 @@ export const useSeatBooking = () => {
   // Load occupied seats from existing bookings
   const loadOccupiedSeats = async (showtimeId) => {
     try {
-      // In a real app, we would fetch bookings for this showtime
-      // For now, generate some occupied seats for demo
-      const occupied = generateOccupiedSeats();
-      setOccupiedSeats(occupied);
+      console.log('🪑 Loading occupied seats for showtime:', showtimeId);
+      
+      if (!showtimeId || showtimeId === 'undefined') {
+        console.warn('Invalid showtimeId for occupied seats:', showtimeId);
+        setOccupiedSeats({});
+        return;
+      }
+      
+      const response = await bookingAPI.getOccupiedSeats(showtimeId);
+      
+      if (response.success) {
+        const occupiedSeatNumbers = response.data.occupiedSeats;
+        console.log('🪑 Occupied seats received:', occupiedSeatNumbers);
+        
+        // Convert array to object format expected by UI
+        const occupied = {};
+        occupiedSeatNumbers.forEach(seatNumber => {
+          occupied[seatNumber] = true;
+        });
+        
+        setOccupiedSeats(occupied);
+      } else {
+        console.warn('Failed to load occupied seats:', response.message);
+        setOccupiedSeats({});
+      }
     } catch (error) {
       console.error('Error loading occupied seats:', error);
-      // Fallback to empty occupied seats
+      // Fallback to empty occupied seats in case API fails
       setOccupiedSeats({});
     }
-  };
-
-  // Generate random occupied seats for demo
-  const generateOccupiedSeats = () => {
-    const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-    const occupied = {};
-    
-    // Add some realistic occupied seat patterns
-    const occupiedPatterns = [
-      ['A3', 'A4', 'A5'], // Group of 3
-      ['B8', 'B9'], // Couple
-      ['C12', 'C13'], // Couple
-      ['F5', 'F6', 'F7', 'F8'], // Group of 4
-      ['G10', 'G11'], // Couple
-      ['I3', 'I4'], // Couple seats
-      ['J7', 'J8'] // Couple seats
-    ];
-
-    occupiedPatterns.flat().forEach(seat => {
-      occupied[seat] = `user_${Math.random().toString(36).substring(7)}`;
-    });
-
-    return occupied;
   };
 
   return {

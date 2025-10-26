@@ -20,6 +20,13 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
+        // Kiểm tra nếu đang ở trang admin thì không check user auth
+        if (window.location.pathname.startsWith('/admin')) {
+          console.log('🚫 Admin page detected, skipping user auth check');
+          setLoading(false);
+          return;
+        }
+
         const storedUser = localStorage.getItem('cinema_user');
         const storedToken = localStorage.getItem('cinema_user_token');
         
@@ -28,8 +35,9 @@ export const AuthProvider = ({ children }) => {
           try {
             const response = await apiClient.get('/auth/profile');
             if (response.success) {
+              // Set user bất kể role - user có thể vừa là user vừa là admin
               setUser(response.data.user);
-              console.log('✅ Token hợp lệ, user đã đăng nhập:', response.data.user.email);
+              console.log('✅ User token hợp lệ, user đã đăng nhập:', response.data.user.email, 'Role:', response.data.user.role);
             } else {
               // Token không hợp lệ, xóa storage
               console.log('❌ Token không hợp lệ, đang xóa storage');
@@ -77,7 +85,7 @@ export const AuthProvider = ({ children }) => {
         console.log('✅ Đăng nhập thành công:', user.email);
         console.log('🔑 Token nhận được:', token ? 'Yes' : 'No');
         
-        // Lưu user và token vào localStorage
+        // Lưu user và token vào localStorage (không clear admin tokens)
         setUser(user);
         localStorage.setItem('cinema_user', JSON.stringify(user));
         localStorage.setItem('cinema_user_token', token);

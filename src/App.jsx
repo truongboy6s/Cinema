@@ -16,6 +16,9 @@ import Navbar from './components/Navbar';
 import Favorites from './pages/Favorite';
 import Releases from './pages/Releases';
 import Theaters from './pages/Theaters';
+import PaymentMockup from './pages/PaymentMockup';
+import BookingSuccess from './pages/BookingSuccess';
+import BookingFailed from './pages/BookingFailed';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import { MovieProvider } from './contexts/MovieContext';
@@ -23,6 +26,7 @@ import { ShowtimeProvider } from './contexts/ShowtimeContext';
 import { TheaterProvider } from './contexts/TheaterContext';
 import { BookingProvider } from './contexts/BookingContext';
 import { UserProvider } from './contexts/UserContext';
+import { AdminBookingProvider } from './contexts/AdminBookingContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
@@ -96,6 +100,21 @@ const AppContent = () => {
         } />
         <Route path='/releases' element={<Releases/>} />
         <Route path='/theaters' element={<Theaters/>} />
+        <Route path='/payment-mockup' element={
+          <ProtectedRoute>
+            <PaymentMockup />
+          </ProtectedRoute>
+        } />
+        <Route path='/booking-success' element={
+          <ProtectedRoute>
+            <BookingSuccess />
+          </ProtectedRoute>
+        } />
+        <Route path='/booking-failed' element={
+          <ProtectedRoute>
+            <BookingFailed />
+          </ProtectedRoute>
+        } />
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
         
@@ -131,7 +150,9 @@ const App = () => {
               <ShowtimeProvider>
                 <TheaterProvider>
                   <BookingProvider>
-                    <AppContent />
+                    <AdminBookingProvider>
+                      <AppContent />
+                    </AdminBookingProvider>
                   </BookingProvider>
                 </TheaterProvider>
               </ShowtimeProvider>

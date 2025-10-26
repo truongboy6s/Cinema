@@ -18,6 +18,20 @@ const MyBooking = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const bookingsPerPage = 5;
 
+  // Helper function to format theater location
+  const formatTheaterLocation = (theater) => {
+    if (!theater) return 'N/A';
+    
+    const name = theater.name || 'N/A';
+    const location = theater.location;
+    
+    if (typeof location === 'object' && location !== null) {
+      return `${name} - ${location.address || ''}, ${location.district || ''}, ${location.city || ''}`;
+    }
+    
+    return `${name} - ${location || ''}`;
+  };
+
   // Check if user is logged in
   useEffect(() => {
     if (!user) {
@@ -244,7 +258,7 @@ const MyBooking = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="w-5 h-5 text-green-500" />
-                        <span>{booking.theaterId?.name || 'N/A'} - {booking.theaterId?.location || ''}</span>
+                        <span>{formatTheaterLocation(booking.theaterId)}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Ticket className="w-5 h-5 text-purple-500" />

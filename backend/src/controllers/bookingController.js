@@ -13,7 +13,7 @@ const createBooking = async (req, res) => {
       customerInfo 
     } = req.body;
     
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     console.log('📝 Creating booking with data:', req.body);
 
@@ -74,13 +74,14 @@ const createBooking = async (req, res) => {
       },
       showDate: showtime.date,
       showTime: showtime.time,
-      paymentStatus: 'pending'
+      paymentStatus: 'pending',
+      bookingStatus: 'pending' // Set initial status as pending
     };
 
     const booking = new Booking(bookingData);
     await booking.save();
 
-    // Update showtime available seats
+    // Temporarily hold seats (decrease available seats)
     showtime.availableSeats -= seats.length;
     await showtime.save();
 
@@ -110,7 +111,7 @@ const createBooking = async (req, res) => {
 // Get user bookings
 const getUserBookings = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const { page = 1, limit = 10, status } = req.query;
 
     let query = { userId };
@@ -152,7 +153,7 @@ const getUserBookings = async (req, res) => {
 const getBookingById = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     const booking = await Booking.findOne({ _id: id, userId })
       .populate('movieId', 'title duration poster genre')
@@ -186,7 +187,7 @@ const getBookingById = async (req, res) => {
 const cancelBooking = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     const booking = await Booking.findOne({ _id: id, userId });
 
@@ -352,11 +353,149 @@ const getAllBookings = async (req, res) => {
   }
 };
 
+// Get occupied seats for a showtime
+const getOccupiedSeats = async (req, res) => {
+  try {
+    const { showtimeId } = req.params;
+
+    console.log('🪑 Getting occupied seats for showtime:', showtimeId);
+
+    const bookings = await Booking.find({
+      showtimeId,
+      bookingStatus: { $in: ['confirmed', 'paid', 'pending'] }
+    }).select('seats');
+
+    const occupiedSeats = bookings.flatMap(booking => 
+      booking.seats.map(seat => seat.seatNumber)
+    );
+
+    console.log('🪑 Occupied seats found:', occupiedSeats);
+
+    res.json({
+      success: true,
+      data: {
+        occupiedSeats: [...new Set(occupiedSeats)] // Remove duplicates
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting occupied seats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy danh sách ghế đã đặt',
+      error: error.message
+    });
+  }
+};
+
+// Simulate payment success
+const simulatePaymentSuccess = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const userId = req.user._id;
+
+    console.log('💳 Simulating payment success for booking:', bookingId);
+
+    const booking = await Booking.findOne({ _id: bookingId, userId });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy booking'
+      });
+    }
+
+    // Update booking status to paid
+    booking.paymentStatus = 'paid';
+    booking.bookingStatus = 'confirmed';
+    booking.paidAt = new Date();
+    await booking.save();
+
+    // Generate booking code if not exists
+    if (!booking.bookingCode) {
+      booking.bookingCode = `BK${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      await booking.save();
+    }
+
+    console.log('✅ Payment simulation successful for booking:', bookingId);
+
+    res.json({
+      success: true,
+      message: 'Thanh toán thành công',
+      data: {
+        booking,
+        redirectUrl: '/booking-success'
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error simulating payment success:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi xử lý thanh toán',
+      error: error.message
+    });
+  }
+};
+
+// Simulate payment failure
+const simulatePaymentFailure = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const userId = req.user._id;
+
+    console.log('💳 Simulating payment failure for booking:', bookingId);
+
+    const booking = await Booking.findOne({ _id: bookingId, userId });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy booking'
+      });
+    }
+
+    // Update booking status to failed
+    booking.paymentStatus = 'failed';
+    booking.bookingStatus = 'cancelled';
+    await booking.save();
+
+    // Update showtime available seats (release the seats)
+    const showtime = await Showtime.findById(booking.showtimeId);
+    if (showtime) {
+      showtime.availableSeats += booking.seats.length;
+      await showtime.save();
+    }
+
+    console.log('❌ Payment simulation failed for booking:', bookingId);
+
+    res.json({
+      success: false,
+      message: 'Thanh toán thất bại',
+      data: {
+        booking,
+        redirectUrl: '/booking-failed'
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error simulating payment failure:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi xử lý thanh toán thất bại',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createBooking,
   getUserBookings,
   getBookingById,
   cancelBooking,
   getBookingStats,
-  getAllBookings
+  getAllBookings,
+  getOccupiedSeats,
+  simulatePaymentSuccess,
+  simulatePaymentFailure
 };

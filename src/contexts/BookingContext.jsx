@@ -20,7 +20,7 @@ export const BookingProvider = ({ children }) => {
 
   // Fetch user bookings when component mounts or user changes
   useEffect(() => {
-    if (user && user.id) {
+    if (user && (user.id || user._id)) {
       fetchUserBookings();
     } else {
       // Clear bookings if user is not logged in

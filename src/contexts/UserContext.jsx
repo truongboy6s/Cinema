@@ -18,8 +18,17 @@ export const UserProvider = ({ children }) => {
   const { user } = useAuth();
   const { adminUser } = useAdminAuth();
   
-  // Sử dụng admin user nếu có, nếu không thì dùng regular user
-  const currentUser = adminUser || user;
+  // Sử dụng user có role admin hoặc adminUser
+  const currentUser = (() => {
+    // Nếu có adminUser từ AdminAuthContext, dùng nó
+    if (adminUser) return adminUser;
+    
+    // Nếu user có role admin, dùng user đó
+    if (user && user.role === 'admin') return user;
+    
+    // Trả về null nếu không có admin access
+    return null;
+  })();
   
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);

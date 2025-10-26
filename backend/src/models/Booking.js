@@ -53,12 +53,12 @@ const bookingSchema = new mongoose.Schema({
   },
   bookingStatus: {
     type: String,
-    enum: ['confirmed', 'cancelled', 'completed'],
-    default: 'confirmed'
+    enum: ['pending', 'confirmed', 'cancelled', 'completed'],
+    default: 'pending'
   },
   bookingCode: {
     type: String,
-    required: true
+    unique: true
   },
   customerInfo: {
     name: String,
@@ -91,7 +91,7 @@ bookingSchema.index({ paymentStatus: 1, bookingStatus: 1 });
 
 // Generate booking code before saving
 bookingSchema.pre('save', function(next) {
-  if (!this.bookingCode) {
+  if (this.isNew && !this.bookingCode) {
     // Generate booking code: CM + timestamp + random 4 digits
     const timestamp = Date.now().toString().slice(-6);
     const random = Math.floor(1000 + Math.random() * 9000);

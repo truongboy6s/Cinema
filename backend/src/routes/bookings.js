@@ -6,7 +6,10 @@ const {
   getBookingById,
   cancelBooking,
   getBookingStats,
-  getAllBookings
+  getAllBookings,
+  getOccupiedSeats,
+  simulatePaymentSuccess,
+  simulatePaymentFailure
 } = require('../controllers/bookingController');
 
 const router = express.Router();
@@ -20,5 +23,12 @@ router.patch('/:id/cancel', auth, cancelBooking);
 // Admin routes
 router.get('/admin/all', auth, getAllBookings);
 router.get('/admin/stats', auth, getBookingStats);
+
+// Get occupied seats for a showtime
+router.get('/showtime/:showtimeId/occupied-seats', getOccupiedSeats);
+
+// Payment simulation routes
+router.post('/payment/simulate-success/:bookingId', auth, simulatePaymentSuccess);
+router.post('/payment/simulate-failure/:bookingId', auth, simulatePaymentFailure);
 
 module.exports = router;

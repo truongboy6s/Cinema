@@ -20,6 +20,13 @@ export const AdminAuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAdminAuth = async () => {
       try {
+        // Chỉ check admin auth khi ở admin pages
+        if (!window.location.pathname.startsWith('/admin')) {
+          console.log('🚫 Not admin page, skipping admin auth check');
+          setAdminLoading(false);
+          return;
+        }
+
         // Xóa demo data cũ
         const oldDemoAdmin = localStorage.getItem('cinema_admin');
         if (oldDemoAdmin) {
@@ -31,27 +38,47 @@ export const AdminAuthProvider = ({ children }) => {
           }
         }
 
+        // Check for admin token first
         const storedAdminUser = localStorage.getItem('cinema_admin');
         const storedAdminToken = localStorage.getItem('cinema_admin_token');
         
+        // Also check user token if user has admin role
+        const storedUser = localStorage.getItem('cinema_user');
+        const storedUserToken = localStorage.getItem('cinema_user_token');
+        
+        let tokenToUse = null;
+        let userToUse = null;
+        
         if (storedAdminUser && storedAdminToken) {
+          tokenToUse = storedAdminToken;
+          userToUse = JSON.parse(storedAdminUser);
+        } else if (storedUser && storedUserToken) {
+          // Check if user has admin role
+          try {
+            const user = JSON.parse(storedUser);
+            if (user.role === 'admin') {
+              tokenToUse = storedUserToken;
+              userToUse = user;
+            }
+          } catch (error) {
+            console.warn('Error parsing stored user:', error);
+          }
+        }
+        
+        if (tokenToUse && userToUse) {
           // Verify token với MongoDB API
           try {
             const response = await apiClient.get('/auth/profile');
             if (response.success && response.data.user.role === 'admin') {
               setAdminUser(response.data.user);
-              console.log('✅ Valid admin token from MongoDB:', response.data.user.email);
+              console.log('✅ Valid admin access from MongoDB:', response.data.user.email);
             } else {
               // Token không hợp lệ hoặc không phải admin
-              console.log('❌ Invalid admin token, clearing storage');
-              localStorage.removeItem('cinema_admin');
-              localStorage.removeItem('cinema_admin_token');
+              console.log('❌ Invalid admin access, user role:', response.data?.user?.role);
               setAdminUser(null);
             }
           } catch (error) {
-            console.log('❌ Token verification failed, clearing storage');
-            localStorage.removeItem('cinema_admin');
-            localStorage.removeItem('cinema_admin_token');
+            console.log('❌ Token verification failed:', error.message);
             setAdminUser(null);
           }
         }
@@ -98,7 +125,7 @@ export const AdminAuthProvider = ({ children }) => {
           source: 'MongoDB'
         });
         
-        // Lưu admin thật từ MongoDB
+        // Lưu admin thật từ MongoDB (không clear user tokens)
         setAdminUser(user);
         localStorage.setItem('cinema_admin', JSON.stringify(user));
         localStorage.setItem('cinema_admin_token', token);

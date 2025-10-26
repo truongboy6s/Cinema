@@ -99,10 +99,10 @@ const SeatLayout = () => {
       const newBooking = await addBooking(bookingData);
       setCreatedBooking(newBooking);
       
-      // Simulate payment processing
-      setTimeout(() => {
-        setBookingStep('success');
-      }, 2000);
+      console.log('✅ Booking created successfully:', newBooking);
+      
+      // Redirect to payment mockup page
+      navigate(`/payment-mockup?bookingId=${newBooking._id}`);
 
     } catch (error) {
       console.error('❌ Booking failed:', error);

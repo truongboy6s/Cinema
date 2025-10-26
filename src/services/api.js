@@ -17,16 +17,56 @@ class ApiClient {
       ...options,
     };
 
-    // Add auth token if available
-    const token = localStorage.getItem('cinema_admin_token') || 
-                  localStorage.getItem('cinema_user_token') ||
-                  localStorage.getItem('admin_token') || 
-                  localStorage.getItem('user_token');
-    console.log('🔑 Token found:', token ? 'Yes' : 'No');
-    console.log('🔑 Token keys checked:', ['cinema_admin_token', 'cinema_user_token', 'admin_token', 'user_token']);
+    // Add auth token if available - smart token selection
+    const isAdminPage = window.location.pathname.startsWith('/admin');
+    
+    let token;
+    let tokenSource = '';
+    
+    if (isAdminPage) {
+      // For admin pages, prefer admin token but allow user token fallback
+      token = localStorage.getItem('cinema_admin_token');
+      tokenSource = 'admin_token';
+      
+      // If no admin token, check if user has admin role
+      if (!token) {
+        const userToken = localStorage.getItem('cinema_user_token');
+        if (userToken) {
+          try {
+            // Check if current user token belongs to admin
+            const storedUser = localStorage.getItem('cinema_user');
+            if (storedUser) {
+              const user = JSON.parse(storedUser);
+              if (user.role === 'admin') {
+                token = userToken;
+                tokenSource = 'user_token_admin_role';
+              }
+            }
+          } catch (error) {
+            console.warn('Error checking user role:', error);
+          }
+        }
+      }
+    } else {
+      // For user pages, prefer user token
+      token = localStorage.getItem('cinema_user_token');
+      tokenSource = 'user_token';
+    }
+    
+    // Final fallback - use any available token
+    if (!token) {
+      token = localStorage.getItem('cinema_admin_token') || 
+              localStorage.getItem('cinema_user_token') ||
+              localStorage.getItem('admin_token') || 
+              localStorage.getItem('user_token');
+      tokenSource = 'fallback';
+    }
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('🔑 Authorization header set');
+      console.log(`🔑 Authorization header set using ${tokenSource} for ${isAdminPage ? 'admin' : 'user'} page`);
+    } else {
+      console.log('🔑 No token available for request');
     }
 
     try {
