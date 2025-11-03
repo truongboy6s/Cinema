@@ -114,8 +114,8 @@ const Register = () => {
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  placeholder="      Nhập họ và tên của bạn"
-                  className="input-field pl-12"
+                  placeholder="Nhập họ và tên của bạn"
+                  className="input-field"
                   required
                 />
               </div>
@@ -133,8 +133,8 @@ const Register = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="      example@email.com"
-                  className="input-field pl-12"
+                  placeholder="example@email.com"
+                  className="input-field"
                   required
                 />
               </div>
@@ -152,8 +152,8 @@ const Register = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="      0123 456 789"
-                  className="input-field pl-12"
+                  placeholder="0123 456 789"
+                  className="input-field"
                   required
                 />
               </div>
@@ -171,8 +171,8 @@ const Register = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="      Tối thiểu 6 ký tự"
-                  className="input-field pl-12 pr-12"
+                  placeholder="Tối thiểu 6 ký tự"
+                  className="input-field"
                   required
                   minLength={6}
                 />
@@ -198,8 +198,8 @@ const Register = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  placeholder="      Nhập lại mật khẩu"
-                  className="input-field pl-12 pr-12"
+                  placeholder="Nhập lại mật khẩu"
+                  className="input-field"
                   required
                 />
                 <button
