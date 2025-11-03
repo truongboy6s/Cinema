@@ -41,6 +41,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  dateOfBirth: {
+    type: Date,
+    default: null
+  },
+  address: {
+    type: String,
+    maxlength: [200, 'Địa chỉ không được quá 200 ký tự'],
+    default: null
+  },
   isEmailVerified: {
     type: Boolean,
     default: false

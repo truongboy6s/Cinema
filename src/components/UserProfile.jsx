@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { User, Mail, Phone, Calendar, LogOut, Edit2, Check, X } from 'lucide-react';
+import { User, Mail, Phone, Calendar, LogOut, Edit2, Check, X, MapPin, Save } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUsers } from '../contexts/UserContext';
 import toast from 'react-hot-toast';
 
 const UserProfile = ({ isOpen, onClose }) => {
-  const { user, logout } = useAuth();
-  const { updateUser } = useUsers();
+  const { user, logout, updateUserProfile: updateAuthUser } = useAuth();
+  const { updateUserProfile } = useUsers();
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     name: user?.name || user?.fullName || '',
-    phone: user?.phone || ''
+    phone: user?.phone || '',
+    dateOfBirth: user?.dateOfBirth || '',
+    address: user?.address || ''
   });
 
   const handleEdit = () => {
@@ -19,23 +21,33 @@ const UserProfile = ({ isOpen, onClose }) => {
 
   const handleSave = async () => {
     try {
-      if (!user?.id) return;
+      // Validate required fields
+      if (!editData.name || !editData.phone) {
+        toast.error('Vui lòng điền đầy đủ tên và số điện thoại');
+        return;
+      }
       
-      // Update user through UserContext
-      await updateUser(user.id, editData);
+      // Update user profile through UserContext
+      const updatedUser = await updateUserProfile(editData);
+      
+      // Update user in AuthContext if available
+      if (updateAuthUser && updatedUser) {
+        updateAuthUser(updatedUser);
+      }
       
       setIsEditing(false);
-      toast.success('Cập nhật thông tin thành công!');
     } catch (error) {
       console.error('Error updating user profile:', error);
-      toast.error('Có lỗi xảy ra khi cập nhật thông tin!');
+      // Error already handled in updateUserProfile
     }
   };
 
   const handleCancel = () => {
     setEditData({
       name: user?.name || user?.fullName || '',
-      phone: user?.phone || ''
+      phone: user?.phone || '',
+      dateOfBirth: user?.dateOfBirth || '',
+      address: user?.address || ''
     });
     setIsEditing(false);
   };
@@ -73,12 +85,13 @@ const UserProfile = ({ isOpen, onClose }) => {
             {isEditing ? (
               <input
                 type="text"
-                value={editData.fullName}
-                onChange={(e) => setEditData({...editData, fullName: e.target.value})}
-                className="w-full bg-transparent text-white text-lg font-medium focus:outline-none"
+                value={editData.name}
+                onChange={(e) => setEditData({...editData, name: e.target.value})}
+                className="w-full bg-white/10 text-white text-lg font-medium focus:outline-none px-3 py-2 rounded-lg border border-gray-600 focus:border-red-500"
+                placeholder="Nhập họ và tên"
               />
             ) : (
-              <p className="text-white text-lg font-medium">{user?.fullName}</p>
+              <p className="text-white text-lg font-medium">{user?.name || user?.fullName || 'Chưa cập nhật'}</p>
             )}
           </div>
 
@@ -89,6 +102,29 @@ const UserProfile = ({ isOpen, onClose }) => {
               <Mail size={20} className="text-gray-400" />
               <p className="text-white">{user?.email}</p>
             </div>
+          </div>
+
+          {/* Date of Birth */}
+          <div className="bg-white/5 rounded-xl p-4">
+            <label className="text-sm text-gray-400">Ngày sinh</label>
+            {isEditing ? (
+              <input
+                type="date"
+                value={editData.dateOfBirth}
+                onChange={(e) => setEditData({...editData, dateOfBirth: e.target.value})}
+                className="w-full bg-white/10 text-white mt-2 px-3 py-2 rounded-lg border border-gray-600 focus:border-red-500 focus:outline-none"
+              />
+            ) : (
+              <div className="flex items-center gap-3 mt-2">
+                <Calendar size={20} className="text-gray-400" />
+                <p className="text-white">
+                  {user?.dateOfBirth 
+                    ? new Date(user.dateOfBirth).toLocaleDateString('vi-VN') 
+                    : 'Chưa cập nhật'
+                  }
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Account Status */}
@@ -110,12 +146,32 @@ const UserProfile = ({ isOpen, onClose }) => {
                 type="tel"
                 value={editData.phone}
                 onChange={(e) => setEditData({...editData, phone: e.target.value})}
-                className="w-full bg-transparent text-white mt-2 focus:outline-none"
+                className="w-full bg-white/10 text-white mt-2 px-3 py-2 rounded-lg border border-gray-600 focus:border-red-500 focus:outline-none"
+                placeholder="Nhập số điện thoại"
               />
             ) : (
               <div className="flex items-center gap-3 mt-2">
                 <Phone size={20} className="text-gray-400" />
-                <p className="text-white">{user?.phone}</p>
+                <p className="text-white">{user?.phone || 'Chưa cập nhật'}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Address */}
+          <div className="bg-white/5 rounded-xl p-4">
+            <label className="text-sm text-gray-400">Địa chỉ</label>
+            {isEditing ? (
+              <textarea
+                value={editData.address}
+                onChange={(e) => setEditData({...editData, address: e.target.value})}
+                className="w-full bg-white/10 text-white mt-2 px-3 py-2 rounded-lg border border-gray-600 focus:border-red-500 focus:outline-none resize-none"
+                rows="3"
+                placeholder="Nhập địa chỉ"
+              />
+            ) : (
+              <div className="flex items-start gap-3 mt-2">
+                <MapPin size={20} className="text-gray-400 mt-1" />
+                <p className="text-white">{user?.address || 'Chưa cập nhật'}</p>
               </div>
             )}
           </div>

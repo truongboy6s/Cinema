@@ -4,10 +4,14 @@ const {
   getAllUsers,
   getUserStats,
   updateUserStatus,
-  deleteUser
+  deleteUser,
+  updateUserProfile
 } = require('../controllers/userController');
 
 const router = express.Router();
+
+// User profile routes
+router.patch('/profile', auth, updateUserProfile);
 
 // Admin routes for user management
 router.get('/', auth, adminOnly, getAllUsers);

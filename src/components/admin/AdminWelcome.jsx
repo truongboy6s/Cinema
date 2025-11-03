@@ -14,15 +14,30 @@ import {
 import { useMovies } from '../../contexts/MovieContext';
 import { useShowtimes } from '../../contexts/ShowtimeContext';
 import { useTheaters } from '../../contexts/TheaterContext';
-import { useBookings } from '../../contexts/BookingContext';
+import { useAdminBookings } from '../../contexts/AdminBookingContext';
 import { useUsers } from '../../contexts/UserContext';
 
 const AdminWelcome = () => {
   const { movies } = useMovies();
   const { showtimes } = useShowtimes();
   const { theaters } = useTheaters();
-  const { bookings } = useBookings();
+  const { bookings, bookingStats, fetchAllBookings } = useAdminBookings();
   const { users, getUserStats } = useUsers();
+
+  // Force fetch bookings on component mount
+  React.useEffect(() => {
+    console.log('🔄 AdminWelcome mounted, fetching bookings...');
+    fetchAllBookings();
+  }, []);
+
+  // Debug logs để kiểm tra data
+  console.log('🔍 AdminWelcome Debug:', {
+    bookingsCount: bookings?.length,
+    bookingsData: bookings?.slice(0, 2),
+    bookingStats,
+    moviesCount: movies?.length,
+    showtimesCount: showtimes?.length
+  });
 
   // User statistics
   const userStats = getUserStats() || {
@@ -49,9 +64,8 @@ const AdminWelcome = () => {
     // Chỉ tính những booking đã thanh toán thành công
     const paidBookings = (bookings || []).filter(b => {
       const isPaid = b.paymentStatus === 'paid';
-      const isConfirmedOrCompleted = b.status === 'confirmed' || b.status === 'completed';
-      console.log(`Booking ${b._id}: status=${b.status}, paymentStatus=${b.paymentStatus}, included=${isPaid && isConfirmedOrCompleted}`);
-      return isPaid && isConfirmedOrCompleted;
+      console.log(`Booking ${b._id}: bookingStatus=${b.bookingStatus}, paymentStatus=${b.paymentStatus}, totalAmount=${b.totalAmount}, included=${isPaid}`);
+      return isPaid;
     });
     
     console.log('Paid bookings:', paidBookings.length, 'out of', (bookings || []).length, 'total bookings');
@@ -153,11 +167,35 @@ const AdminWelcome = () => {
     { icon: CreditCard, label: 'Đặt vé', path: '/admin/bookings', color: 'from-orange-500 to-red-500' }
   ];
 
-  const recentMovies = movies.slice(0, 4).map(movie => ({
-    title: movie.title,
-    rating: movie.rating || 4.5,
-    views: Math.floor(Math.random() * 2000000) + 500000
-  }));
+  // Recent movies based on actual data and recent bookings
+  const recentMoviesData = useMemo(() => {
+    const movieArray = movies || [];
+    
+    // Get movies sorted by creation date (newest first)
+    const recentMovies = movieArray
+      .sort((a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0))
+      .slice(0, 4);
+    
+    // Calculate actual booking stats for each movie
+    return recentMovies.map(movie => {
+      const movieBookings = (bookings || []).filter(booking => 
+        booking.movieId?._id === movie._id || booking.movieId === movie._id
+      );
+      
+      const paidBookings = movieBookings.filter(b => b.paymentStatus === 'paid');
+      const totalRevenue = paidBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+      const totalSeats = paidBookings.reduce((sum, b) => sum + (b.seats?.length || 0), 0);
+      
+      return {
+        title: movie.title,
+        rating: movie.rating || 4.5,
+        bookings: paidBookings.length,
+        revenue: totalRevenue,
+        seats: totalSeats,
+        updatedAt: movie.updatedAt || movie.createdAt
+      };
+    });
+  }, [movies, bookings]);
 
   return (
     <div className="space-y-8">
@@ -236,22 +274,32 @@ const AdminWelcome = () => {
 
         {/* Recent Movies Performance */}
         <div className="glass-card rounded-xl p-6 border border-gray-700">
-          <h2 className="text-xl font-bold text-white mb-6">Phim nổi bật</h2>
+          <h2 className="text-xl font-bold text-white mb-6">Phim mới cập nhật</h2>
           <div className="space-y-4">
-            {recentMovies.map((movie, index) => (
+            {recentMoviesData.map((movie, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
-                <div>
+                <div className="flex-1">
                   <h3 className="text-white font-medium">{movie.title}</h3>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span className="text-gray-400 text-sm">{movie.rating}</span>
+                  <div className="flex items-center space-x-4 mt-1">
+                    <div className="flex items-center space-x-1">
+                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                      <span className="text-gray-400 text-sm">{movie.rating}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <CreditCard className="w-4 h-4 text-green-400" />
+                      <span className="text-gray-400 text-sm">{movie.bookings} đặt</span>
+                    </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="flex items-center text-gray-400 text-sm">
-                    <Eye className="w-4 h-4 mr-1" />
-                    {new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(movie.views)}
+                  <div className="text-green-400 font-medium text-sm">
+                    {new Intl.NumberFormat('vi-VN', { 
+                      style: 'currency', 
+                      currency: 'VND',
+                      notation: 'compact' 
+                    }).format(movie.revenue)}
                   </div>
+                  <div className="text-gray-500 text-xs">{movie.seats} ghế</div>
                 </div>
               </div>
             ))}
@@ -293,25 +341,71 @@ const AdminWelcome = () => {
       <div className="glass-card rounded-xl p-6 border border-gray-700">
         <h2 className="text-xl font-bold text-white mb-6">Hoạt động gần đây</h2>
         <div className="space-y-3">
-          <div className="flex items-center space-x-4 p-3 bg-slate-800/30 rounded-lg">
-            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-            <span className="text-gray-300">Đặt vé mới cho suất chiếu "{todayShowtimes[0]?.movie || 'Avengers'}"</span>
-            <span className="text-gray-500 text-sm ml-auto">2 phút trước</span>
-          </div>
-          <div className="flex items-center space-x-4 p-3 bg-slate-800/30 rounded-lg">
-            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-            <span className="text-gray-300">Phim "{movies[0]?.title || 'Spider-Man'}" đã được cập nhật</span>
-            <span className="text-gray-500 text-sm ml-auto">5 phút trước</span>
-          </div>
-          <div className="flex items-center space-x-4 p-3 bg-slate-800/30 rounded-lg">
-            <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-            <span className="text-gray-300">Rạp chiếu "{activeTheaters[0]?.name || 'Deluxe Theater'}" đang hoạt động</span>
-            <span className="text-gray-500 text-sm ml-auto">10 phút trước</span>
-          </div>
+          {/* Recent Bookings */}
+          {(bookings || [])
+            .filter(b => b.paymentStatus === 'paid')
+            .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+            .slice(0, 2)
+            .map((booking, index) => (
+              <div key={`booking-${index}`} className="flex items-center space-x-4 p-3 bg-slate-800/30 rounded-lg">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span className="text-gray-300">
+                  Đặt vé thành công cho "{booking.movieId?.title || 'Phim'}" - 
+                  {booking.seats?.length || 0} ghế - 
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(booking.totalAmount || 0)}
+                </span>
+                <span className="text-gray-500 text-sm ml-auto">
+                  {new Date(booking.createdAt).toLocaleString('vi-VN', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    day: '2-digit',
+                    month: '2-digit' 
+                  })}
+                </span>
+              </div>
+            ))}
+          
+          {/* Recent Movies */}
+          {recentMoviesData.slice(0, 1).map((movie, index) => (
+            <div key={`movie-${index}`} className="flex items-center space-x-4 p-3 bg-slate-800/30 rounded-lg">
+              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+              <span className="text-gray-300">
+                Phim "{movie.title}" mới được cập nhật - Đã có {movie.bookings} lượt đặt vé
+              </span>
+              <span className="text-gray-500 text-sm ml-auto">
+                {movie.updatedAt ? new Date(movie.updatedAt).toLocaleString('vi-VN', {
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  day: '2-digit',
+                  month: '2-digit'
+                }) : 'Mới'}
+              </span>
+            </div>
+          ))}
+          
+          {/* Theater Activity */}
+          {activeTheaters.slice(0, 1).map((theater, index) => (
+            <div key={`theater-${index}`} className="flex items-center space-x-4 p-3 bg-slate-800/30 rounded-lg">
+              <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+              <span className="text-gray-300">
+                Rạp "{theater.name}" đang hoạt động - {theater.rooms?.length || 0} phòng chiếu
+              </span>
+              <span className="text-gray-500 text-sm ml-auto">Đang hoạt động</span>
+            </div>
+          ))}
+          
+          {/* Revenue Summary */}
           <div className="flex items-center space-x-4 p-3 bg-slate-800/30 rounded-lg">
             <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-            <span className="text-gray-300">Suất chiếu mới đã được thêm vào lịch - Tổng {revenueStats.totalSeats} ghế đã bán</span>
-            <span className="text-gray-500 text-sm ml-auto">15 phút trước</span>
+            <span className="text-gray-300">
+              Thống kê hôm nay: {revenueStats.todaySeats} ghế đã bán - 
+              Doanh thu {new Intl.NumberFormat('vi-VN', { 
+                style: 'currency', 
+                currency: 'VND',
+                notation: 'compact' 
+              }).format(revenueStats.todayRevenue)}
+            </span>
+            <span className="text-gray-500 text-sm ml-auto">Hôm nay</span>
           </div>
         </div>
       </div>

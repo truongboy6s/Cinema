@@ -119,9 +119,9 @@ const TheaterManagement = () => {
       rooms: prev.rooms.map((room, i) =>
         i === roomIndex ? {
           ...room,
-          facilities: room.facilities.includes(facility)
-            ? room.facilities.filter(f => f !== facility)
-            : [...room.facilities, facility]
+          facilities: (room.facilities || []).includes(facility)
+            ? (room.facilities || []).filter(f => f !== facility)
+            : [...(room.facilities || []), facility]
         } : room
       )
     }));
@@ -198,7 +198,10 @@ const TheaterManagement = () => {
         address: theater.location?.address || ''
       },
       capacity: theater.capacity?.toString() || '',
-      rooms: theater.rooms || [{ name: '', capacity: '', type: '2D', facilities: [] }],
+      rooms: (theater.rooms || [{ name: '', capacity: '', type: '2D', facilities: [] }]).map(room => ({
+        ...room,
+        facilities: room.facilities || []
+      })),
       facilities: theater.facilities || [],
       description: theater.description || '',
       status: theater.status || 'active'
@@ -583,7 +586,7 @@ const TheaterManagement = () => {
                               <label key={facility} className="flex items-center text-gray-300">
                                 <input
                                   type="checkbox"
-                                  checked={room.facilities.includes(facility)}
+                                  checked={room.facilities?.includes(facility) || false}
                                   onChange={() => handleRoomFacilityChange(index, facility)}
                                   className="mr-2 accent-cyan-500"
                                 />

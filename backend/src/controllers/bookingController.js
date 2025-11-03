@@ -16,6 +16,8 @@ const createBooking = async (req, res) => {
     const userId = req.user._id;
 
     console.log('📝 Creating booking with data:', req.body);
+    console.log('👤 User data:', req.user);
+    console.log('📋 CustomerInfo received:', customerInfo);
 
     // Validate required fields
     if (!showtimeId || !seats || seats.length === 0 || !paymentMethod) {
@@ -80,6 +82,8 @@ const createBooking = async (req, res) => {
 
     const booking = new Booking(bookingData);
     await booking.save();
+    
+    console.log('✅ Booking created with customerInfo:', booking.customerInfo);
 
     // Temporarily hold seats (decrease available seats)
     showtime.availableSeats -= seats.length;
@@ -129,6 +133,14 @@ const getUserBookings = async (req, res) => {
 
     const total = await Booking.countDocuments(query);
 
+    // Debug log để check booking status
+    console.log('📋 getUserBookings - Sample booking statuses:', bookings.slice(0, 2).map(b => ({
+      id: b._id,
+      bookingStatus: b.bookingStatus,
+      paymentStatus: b.paymentStatus,
+      bookingCode: b.bookingCode
+    })));
+
     res.json({
       success: true,
       data: bookings,
@@ -158,7 +170,7 @@ const getBookingById = async (req, res) => {
     const booking = await Booking.findOne({ _id: id, userId })
       .populate('movieId', 'title duration poster genre')
       .populate('theaterId', 'name location rooms')
-      .populate('showtimeId', 'date time')
+      .populate('showtimeId', 'date time roomId')
       .populate('userId', 'name email phone');
 
     if (!booking) {
@@ -166,6 +178,39 @@ const getBookingById = async (req, res) => {
         success: false,
         message: 'Không tìm thấy vé đặt'
       });
+    }
+
+    // Add room info from theater
+    let roomName = 'N/A';
+    console.log('🏠 GetBookingById Room Debug:', {
+      hasTheater: !!booking.theaterId,
+      hasRooms: !!booking.theaterId?.rooms,
+      roomsCount: booking.theaterId?.rooms?.length,
+      hasShowtime: !!booking.showtimeId,
+      roomId: booking.showtimeId?.roomId,
+      theaterRooms: booking.theaterId?.rooms?.map(r => ({ id: r._id, name: r.name }))
+    });
+    
+    if (booking.theaterId?.rooms && booking.showtimeId?.roomId) {
+      const room = booking.theaterId.rooms.find(r => 
+        r._id.toString() === booking.showtimeId.roomId.toString()
+      );
+      roomName = room ? room.name : `Phòng ${booking.showtimeId.roomId}`;
+      console.log('🏠 GetBookingById Room result:', { found: !!room, roomName });
+    }
+    
+    if (booking.showtimeId) {
+      booking.showtimeId.room = roomName;
+    }
+
+    // Ensure customerInfo có đầy đủ thông tin
+    if (!booking.customerInfo || !booking.customerInfo.name) {
+      booking.customerInfo = {
+        name: booking.userId?.name || 'Khách hàng',
+        email: booking.userId?.email || booking.customerInfo?.email || 'N/A',
+        phone: booking.userId?.phone || booking.customerInfo?.phone || 'N/A'
+      };
+      console.log('🔧 GetBookingById Fixed customerInfo:', booking.customerInfo);
     }
 
     res.json({
@@ -331,11 +376,27 @@ const getAllBookings = async (req, res) => {
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
+    // Fix booking data để ensure customerInfo có data
+    const bookingsWithCustomerInfo = bookings.map(booking => {
+      const bookingObj = booking.toObject();
+      
+      // Nếu customerInfo trống hoặc không có, lấy từ populated userId
+      if (!bookingObj.customerInfo || !bookingObj.customerInfo.name) {
+        bookingObj.customerInfo = {
+          name: bookingObj.userId?.name || 'N/A',
+          email: bookingObj.userId?.email || 'N/A',
+          phone: bookingObj.userId?.phone || 'N/A'
+        };
+      }
+      
+      return bookingObj;
+    });
+
     const total = await Booking.countDocuments(query);
 
     res.json({
       success: true,
-      data: bookings,
+      data: bookingsWithCustomerInfo,
       pagination: {
         current: parseInt(page),
         pages: Math.ceil(total / limit),
@@ -413,17 +474,84 @@ const simulatePaymentSuccess = async (req, res) => {
 
     // Generate booking code if not exists
     if (!booking.bookingCode) {
-      booking.bookingCode = `BK${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      booking.bookingCode = `CM${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
       await booking.save();
     }
 
+    // Generate QR code data
+    const qrData = {
+      bookingCode: booking.bookingCode,
+      movieId: booking.movieId,
+      theaterId: booking.theaterId,
+      showtimeId: booking.showtimeId,
+      seats: booking.seats,
+      showDate: booking.showDate,
+      showTime: booking.showTime,
+      totalAmount: booking.totalAmount,
+      customerInfo: booking.customerInfo,
+      timestamp: booking.paidAt
+    };
+
+    // Update booking with QR data
+    booking.qrCode = JSON.stringify(qrData);
+    await booking.save();
+
+    // Populate booking data for frontend với room info
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate('movieId', 'title duration poster genre')
+      .populate('theaterId', 'name location rooms')
+      .populate('showtimeId', 'date time roomId')
+      .populate('userId', 'name email phone');
+
+    // Get room info từ theater rooms
+    let roomName = 'N/A';
+    console.log('🏠 Debug Room Info:', {
+      hasTheater: !!populatedBooking.theaterId,
+      hasRooms: !!populatedBooking.theaterId?.rooms,
+      roomsCount: populatedBooking.theaterId?.rooms?.length,
+      hasShowtime: !!populatedBooking.showtimeId,
+      roomId: populatedBooking.showtimeId?.roomId,
+      theaterRooms: populatedBooking.theaterId?.rooms?.map(r => ({ id: r._id, name: r.name }))
+    });
+    
+    if (populatedBooking.theaterId?.rooms && populatedBooking.showtimeId?.roomId) {
+      const room = populatedBooking.theaterId.rooms.find(r => 
+        r._id.toString() === populatedBooking.showtimeId.roomId.toString()
+      );
+      roomName = room ? room.name : `Phòng ${populatedBooking.showtimeId.roomId}`;
+      console.log('🏠 Room matching result:', { found: !!room, roomName });
+    }
+    
+    // Add room info to showtime object
+    if (populatedBooking.showtimeId) {
+      populatedBooking.showtimeId.room = roomName;
+    }
+
+    // Ensure customerInfo có đầy đủ thông tin
+    if (!populatedBooking.customerInfo || !populatedBooking.customerInfo.name) {
+      populatedBooking.customerInfo = {
+        name: populatedBooking.userId?.name || 'Khách hàng',
+        email: populatedBooking.userId?.email || populatedBooking.customerInfo?.email || 'N/A',
+        phone: populatedBooking.userId?.phone || populatedBooking.customerInfo?.phone || 'N/A'
+      };
+      console.log('🔧 Fixed customerInfo:', populatedBooking.customerInfo);
+    }
+
     console.log('✅ Payment simulation successful for booking:', bookingId);
+    console.log('📊 Populated booking data:', {
+      movieTitle: populatedBooking.movieId?.title,
+      theaterName: populatedBooking.theaterId?.name,
+      theaterLocation: populatedBooking.theaterId?.location,
+      customerInfo: populatedBooking.customerInfo,
+      userId: populatedBooking.userId,
+      roomName: roomName
+    });
 
     res.json({
       success: true,
       message: 'Thanh toán thành công',
       data: {
-        booking,
+        booking: populatedBooking,
         redirectUrl: '/booking-success'
       }
     });
@@ -467,13 +595,20 @@ const simulatePaymentFailure = async (req, res) => {
       await showtime.save();
     }
 
+    // Populate booking data for frontend even in failure case
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate('movieId', 'title duration poster genre')
+      .populate('theaterId', 'name location')
+      .populate('showtimeId', 'date time')
+      .populate('userId', 'name email phone');
+
     console.log('❌ Payment simulation failed for booking:', bookingId);
 
     res.json({
       success: false,
       message: 'Thanh toán thất bại',
       data: {
-        booking,
+        booking: populatedBooking,
         redirectUrl: '/booking-failed'
       }
     });

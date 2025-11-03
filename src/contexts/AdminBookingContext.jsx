@@ -19,8 +19,12 @@ export const AdminBookingProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Debug admin access
+  console.log('🔑 AdminBookingProvider - hasAdminAccess:', hasAdminAccess);
+
   // Fetch all bookings (admin only)
   useEffect(() => {
+    console.log('🔄 AdminBookingProvider useEffect triggered, hasAdminAccess:', hasAdminAccess);
     if (hasAdminAccess) {
       fetchAllBookings();
       fetchBookingStats();
@@ -39,6 +43,15 @@ export const AdminBookingProvider = ({ children }) => {
       if (response.success) {
         setBookings(response.data || []);
         console.log('✅ Admin bookings loaded:', response.data?.length || 0);
+        
+        // Debug: Check customer info in bookings
+        if (response.data && response.data.length > 0) {
+          console.log('🔍 Admin booking sample data:', {
+            booking: response.data[0],
+            customerInfo: response.data[0]?.customerInfo,
+            userId: response.data[0]?.userId
+          });
+        }
       } else {
         throw new Error(response.message || 'Failed to fetch bookings');
       }
