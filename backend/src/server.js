@@ -21,6 +21,16 @@ const app = express();
 // Connect to database
 connectDB();
 
+// Clean up old indexes after database connection
+setTimeout(async () => {
+  try {
+    const Showtime = require('./models/Showtime');
+    await Showtime.cleanOldIndexes();
+  } catch (error) {
+    console.log('⚠️ Index cleanup warning:', error.message);
+  }
+}, 2000); // Wait 2 seconds for DB connection to be ready
+
 // Security middleware
 app.use(helmet());
 

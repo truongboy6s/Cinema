@@ -219,12 +219,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Update user profile in auth context
+  const updateUserProfile = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('cinema_user', JSON.stringify(updatedUser));
+    console.log('✅ User profile updated in AuthContext:', updatedUser);
+  };
+
   const value = {
     user,
     login,
     register,
     logout,
     updateProfile,
+    updateUserProfile,
     changePassword,
     loading,
     isAuthenticated: !!user

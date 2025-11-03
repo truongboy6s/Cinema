@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, Eye, User, Mail, Phone, UserPlus, Users, RefreshCw } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, User, Mail, Phone, UserPlus, Users, RefreshCw } from 'lucide-react';
 import { useUsers } from '../../contexts/UserContext';
 import toast from 'react-hot-toast';
 
@@ -50,8 +50,7 @@ const UserManagement = () => {
     totalUsers: 0,
     activeUsers: 0,
     inactiveUsers: 0,
-    newToday: 0,
-    totalBookings: 0
+    newToday: 0
   };
 
   const handleInputChange = (e) => {
@@ -176,15 +175,7 @@ const UserManagement = () => {
           </div>
         </div>
 
-        <div className="glass-card rounded-xl p-6 border border-gray-700">
-          <div className="flex items-center gap-3">
-            <Eye className="w-8 h-8 text-yellow-400" />
-            <div>
-              <h3 className="text-sm font-medium text-gray-400">Tổng đặt vé</h3>
-              <p className="text-2xl font-bold text-yellow-400">{stats.totalBookings || 0}</p>
-            </div>
-          </div>
-        </div>
+
       </div>
 
       {/* Users Table */}
@@ -196,14 +187,13 @@ const UserManagement = () => {
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Người dùng</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Liên hệ</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Ngày tham gia</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Đặt vé</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center">
+                  <td colSpan="4" className="px-6 py-12 text-center">
                     <div className="flex items-center justify-center">
                       <RefreshCw className="w-6 h-6 text-cyan-400 animate-spin mr-2" />
                       <span className="text-gray-400">Đang tải dữ liệu người dùng...</span>
@@ -212,7 +202,7 @@ const UserManagement = () => {
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center">
+                  <td colSpan="4" className="px-6 py-12 text-center">
                     <div className="text-gray-400">
                       <Users className="w-12 h-12 mx-auto mb-4 text-gray-600" />
                       <p className="text-lg mb-2">Chưa có người dùng nào</p>
@@ -248,9 +238,6 @@ const UserManagement = () => {
                   </td>
                   <td className="px-6 py-4 text-gray-300">
                     {user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : 'Chưa có dữ liệu'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-cyan-400 font-medium">{user.bookings || 0} vé</span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">

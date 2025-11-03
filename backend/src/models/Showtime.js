@@ -68,6 +68,17 @@ showtimeSchema.index({ theaterId: 1, roomId: 1, date: 1, time: 1 }, { unique: tr
 showtimeSchema.index({ movieId: 1, date: 1 });
 showtimeSchema.index({ date: 1, status: 1 });
 
+// Clean up old indexes when model is loaded
+showtimeSchema.statics.cleanOldIndexes = async function() {
+  try {
+    // Drop old conflicting indexes
+    await this.collection.dropIndex('theater_1_showDate_1_showTime_1').catch(() => {});
+    console.log('✅ Cleaned old theater index');
+  } catch (error) {
+    console.log('ℹ️ No old indexes to clean:', error.message);
+  }
+};
+
 // Virtual for getting room info
 showtimeSchema.virtual('roomInfo', {
   ref: 'Theater',

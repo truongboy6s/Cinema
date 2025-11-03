@@ -247,12 +247,40 @@ export const UserProvider = ({ children }) => {
     };
   };
 
+  // Update user profile (for regular users)
+  const updateUserProfile = async (userData) => {
+    try {
+      setLoading(true);
+      console.log('🔄 Updating user profile:', userData);
+      
+      const response = await apiClient.patch('/users/profile', userData);
+      
+      if (response.success) {
+        console.log('✅ Profile updated successfully');
+        toast.success('Cập nhật thông tin thành công!');
+        
+        // Return updated user data để AuthContext có thể update
+        return response.data.user;
+      } else {
+        throw new Error(response.message || 'Cập nhật thất bại');
+      }
+    } catch (error) {
+      console.error('❌ Error updating profile:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Có lỗi xảy ra khi cập nhật thông tin';
+      toast.error(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     users,
     loading,
     stats,
     addUser,
     updateUser,
+    updateUserProfile,
     deleteUser,
     getUserById,
     getUserByEmail,

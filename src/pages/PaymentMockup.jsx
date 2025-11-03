@@ -4,11 +4,13 @@ import { CreditCard, CheckCircle, XCircle, ArrowLeft, Clock } from 'lucide-react
 import { bookingAPI } from '../services/apiServices';
 import BlurCircle from '../components/BlurCircle';
 import toast from 'react-hot-toast';
+import { useBookings } from '../contexts/BookingContext';
 
 const PaymentMockup = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const bookingId = searchParams.get('bookingId');
+  const { fetchUserBookings } = useBookings();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -50,6 +52,15 @@ const PaymentMockup = () => {
       
       if (response.success) {
         toast.success('Thanh toán thành công!');
+        
+        // Debug: Check API response data
+        console.log('💳 Payment API response:', response);
+        console.log('💳 Booking data from API:', response.data.booking);
+        console.log('💳 Movie data in response:', response.data.booking?.movieId);
+        console.log('💳 Theater data in response:', response.data.booking?.theaterId);
+        
+        // Refresh bookings in context để update status
+        await fetchUserBookings();
         
         // Redirect to success page after delay
         setTimeout(() => {

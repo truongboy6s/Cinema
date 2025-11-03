@@ -2,6 +2,35 @@ const Showtime = require('../models/Showtime');
 const Movie = require('../models/Movie');
 const Theater = require('../models/Theater');
 
+// Debug endpoint để xem all showtimes raw data
+const getShowtimesDebug = async (req, res) => {
+  try {
+    const showtimes = await Showtime.find().populate('movieId', 'title').populate('theaterId', 'name');
+    
+    const debugData = showtimes.map(st => ({
+      _id: st._id,
+      movie: st.movieId?.title,
+      theater: st.theaterId?.name,
+      theaterId: st.theaterId?._id,
+      roomId: st.roomId,
+      date: st.date,
+      time: st.time,
+      status: st.status
+    }));
+    
+    console.log('🔍 Debug all showtimes:', debugData);
+    
+    res.json({
+      success: true,
+      count: showtimes.length,
+      data: debugData
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // Get all showtimes
 const getAllShowtimes = async (req, res) => {
   try {
@@ -81,6 +110,12 @@ const createShowtime = async (req, res) => {
 
     // Debug logging
     console.log('📝 Received showtime data:', req.body);
+    
+    // Ensure ObjectId format consistency
+    const mongoose = require('mongoose');
+    const normalizedTheaterId = mongoose.Types.ObjectId.isValid(theaterId) ? new mongoose.Types.ObjectId(theaterId) : theaterId;
+    const normalizedRoomId = mongoose.Types.ObjectId.isValid(roomId) ? new mongoose.Types.ObjectId(roomId) : roomId;
+    const normalizedMovieId = mongoose.Types.ObjectId.isValid(movieId) ? new mongoose.Types.ObjectId(movieId) : movieId;
 
     // Validate required fields
     if (!movieId || !theaterId || !roomId || !date || !time || !price || !totalSeats) {
@@ -93,7 +128,7 @@ const createShowtime = async (req, res) => {
     }
 
     // Check if movie exists
-    const movie = await Movie.findById(movieId);
+    const movie = await Movie.findById(normalizedMovieId);
     if (!movie) {
       return res.status(404).json({
         success: false,
@@ -102,7 +137,7 @@ const createShowtime = async (req, res) => {
     }
 
     // Check if theater exists
-    const theater = await Theater.findById(theaterId);
+    const theater = await Theater.findById(normalizedTheaterId);
     if (!theater) {
       return res.status(404).json({
         success: false,
@@ -111,7 +146,7 @@ const createShowtime = async (req, res) => {
     }
 
     // Check if room exists in theater
-    const room = theater.rooms.find(r => r._id.toString() === roomId);
+    const room = theater.rooms.find(r => r._id.toString() === normalizedRoomId.toString());
     if (!room) {
       return res.status(404).json({
         success: false,
@@ -119,8 +154,80 @@ const createShowtime = async (req, res) => {
       });
     }
 
-    // Check for time conflicts
-    const conflictingShowtime = await checkTimeConflict(theaterId, roomId, date, time, movie.duration);
+    // Debug logging để kiểm tra data
+    console.log('🔍 Checking for duplicate with data:', {
+      originalTheaterId: theaterId,
+      originalRoomId: roomId,
+      normalizedTheaterId: normalizedTheaterId,
+      normalizedRoomId: normalizedRoomId,
+      date: date,
+      time: time,
+      theaterIdType: typeof theaterId,
+      roomIdType: typeof roomId
+    });
+
+    // Check for slot occupation first - use normalized IDs
+    const existingShowtime = await Showtime.findOne({
+      theaterId: normalizedTheaterId,
+      roomId: normalizedRoomId,
+      date,
+      time,
+      status: 'active'
+    }).populate('movieId', 'title');
+    
+    console.log('🔍 Found existing showtime:', existingShowtime ? {
+      id: existingShowtime._id,
+      theaterId: existingShowtime.theaterId,
+      roomId: existingShowtime.roomId,
+      date: existingShowtime.date,
+      time: existingShowtime.time,
+      movie: existingShowtime.movieId?.title
+    } : 'None');
+    
+    // Debug: List tất cả showtimes cùng ngày để debug
+    const allShowtimesToday = await Showtime.find({
+      date: date,
+      status: 'active'
+    }).populate('movieId', 'title').populate('theaterId', 'name');
+    
+    console.log('📊 All showtimes on', date, ':', allShowtimesToday.map(st => ({
+      movie: st.movieId?.title,
+      theater: st.theaterId?.name,
+      theaterId: st.theaterId?._id,
+      roomId: st.roomId,
+      time: st.time
+    })));
+    
+    if (existingShowtime) {
+      // Check if it's the same movie (true duplicate)
+      if (existingShowtime.movieId._id.toString() === normalizedMovieId.toString()) {
+        return res.status(400).json({
+          success: false,
+          message: `Lịch chiếu này đã tồn tại: phim "${existingShowtime.movieId.title}" vào ${time} ngày ${date}.`,
+          error: 'True duplicate',
+          existing: {
+            movie: existingShowtime.movieId.title,
+            time: existingShowtime.time,
+            date: existingShowtime.date
+          }
+        });
+      } else {
+        // Different movie, slot occupied
+        return res.status(400).json({
+          success: false,
+          message: `Slot thời gian ${time} ngày ${date} đã được sử dụng cho phim "${existingShowtime.movieId.title}". Một phòng chỉ có thể chiếu một phim tại một thời điểm. Vui lòng chọn thời gian khác.`,
+          error: 'Slot occupied',
+          existing: {
+            movie: existingShowtime.movieId.title,
+            time: existingShowtime.time,
+            date: existingShowtime.date
+          }
+        });
+      }
+    }
+
+    // Check for time conflicts - use normalized IDs
+    const conflictingShowtime = await checkTimeConflict(normalizedTheaterId, normalizedRoomId, date, time, movie.duration);
     if (conflictingShowtime) {
       return res.status(400).json({
         success: false,
@@ -130,9 +237,9 @@ const createShowtime = async (req, res) => {
     }
 
     const showtime = new Showtime({
-      movieId,
-      theaterId,
-      roomId,
+      movieId: normalizedMovieId,
+      theaterId: normalizedTheaterId,
+      roomId: normalizedRoomId,
       date,
       time,
       price,
@@ -158,13 +265,43 @@ const createShowtime = async (req, res) => {
     // Handle MongoDB duplicate key error
     if (error.code === 11000) {
       console.log('🔍 Duplicate key error details:', error.keyPattern, error.keyValue);
+      
+      // Try to find the actual conflicting showtime để show better error
+      try {
+        // Use original IDs since normalizedIds might be out of scope
+        const conflictShowtime = await Showtime.findOne({
+          theaterId: theaterId,
+          roomId: roomId,
+          date: date,
+          time: time,
+          status: 'active'
+        }).populate('movieId', 'title').populate('theaterId', 'name');
+        
+        if (conflictShowtime) {
+          return res.status(400).json({
+            success: false,
+            message: `Slot ${time} ngày ${date} tại ${conflictShowtime.theaterId?.name} đã có phim "${conflictShowtime.movieId?.title}". Vui lòng chọn thời gian khác.`,
+            error: 'Slot occupied',
+            existing: {
+              movie: conflictShowtime.movieId?.title,
+              theater: conflictShowtime.theaterId?.name,
+              time: conflictShowtime.time,
+              date: conflictShowtime.date
+            }
+          });
+        }
+      } catch (findError) {
+        console.error('Error finding conflict details:', findError);
+      }
+      
       return res.status(400).json({
         success: false,
-        message: 'Lịch chiếu này đã tồn tại với thông tin tương tự',
-        error: 'Duplicate entry',
+        message: 'Slot thời gian này đã được sử dụng. Một phòng chỉ có thể chiếu một phim tại một thời điểm. Vui lòng chọn thời gian khác.',
+        error: 'Duplicate slot',
         details: {
           duplicateFields: error.keyPattern,
-          duplicateValues: error.keyValue
+          duplicateValues: error.keyValue,
+          explanation: 'A room can only show one movie at a specific time'
         }
       });
     }
@@ -513,6 +650,7 @@ const calculateEndTime = (startTime, duration) => {
 
 module.exports = {
   getAllShowtimes,
+  getShowtimesDebug,
   getShowtimeById,
   createShowtime,
   updateShowtime,

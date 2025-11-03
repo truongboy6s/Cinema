@@ -132,13 +132,35 @@ const ShowtimeManagement = () => {
 
   // Get current theater
   const getCurrentTheater = () => {
-    return theaters.find(t => t._id === formData.theaterId || t.id === formData.theaterId);
+    console.log('🔍 getCurrentTheater - looking for:', formData.theaterId, typeof formData.theaterId);
+    console.log('🔍 Available theaters:', theaters.map(t => ({ _id: t._id, id: t.id, name: t.name })));
+    
+    const found = theaters.find(t => {
+      // Handle different data types - theaterId có thể là object hoặc string
+      const theaterIdValue = formData.theaterId?._id || formData.theaterId?.id || formData.theaterId;
+      const tId = t._id || t.id;
+      return tId && tId.toString() === theaterIdValue?.toString();
+    });
+    
+    console.log('🔍 Found theater:', found?.name);
+    return found;
   };
 
   // Get current room
   const getCurrentRoom = () => {
     const theater = getCurrentTheater();
-    return theater?.rooms?.find(r => r._id === formData.roomId || r.id === formData.roomId);
+    console.log('🔍 getCurrentRoom - looking for:', formData.roomId, typeof formData.roomId);
+    console.log('🔍 Available rooms in theater:', theater?.rooms?.map(r => ({ _id: r._id, id: r.id, name: r.name })));
+    
+    const found = theater?.rooms?.find(r => {
+      // Handle different data types - roomId có thể là object hoặc string
+      const roomIdValue = formData.roomId?._id || formData.roomId?.id || formData.roomId;
+      const rId = r._id || r.id;
+      return rId && rId.toString() === roomIdValue?.toString();
+    });
+    
+    console.log('🔍 Found room:', found?.name);
+    return found;
   };
 
   // Get available rooms for selected theater
@@ -185,10 +207,13 @@ const ShowtimeManagement = () => {
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    console.log(`🔄 handleInputChange: ${name} = ${value}`);
+    
+    setFormData(prev => {
+      const newData = { ...prev, [name]: value };
+      console.log('📝 Updated formData:', newData);
+      return newData;
+    });
 
     // Reset date selection when movie changes
     if (name === 'movieId') {
@@ -201,20 +226,25 @@ const ShowtimeManagement = () => {
 
     // Reset room selection when theater changes
     if (name === 'theaterId') {
-      setFormData(prev => ({
-        ...prev,
-        roomId: ''
-      }));
+      console.log('🏢 Theater changed, resetting roomId');
+      setFormData(prev => {
+        const resetData = { ...prev, roomId: '' };
+        console.log('📝 After theater change:', resetData);
+        return resetData;
+      });
     }
 
     // Auto-set total seats when room changes
     if (name === 'roomId') {
+      console.log('🎬 Room changed to:', value);
       const room = getAvailableRooms().find(r => (r._id || r.id) === value);
+      console.log('🔍 Found room for capacity:', room);
       if (room) {
-        setFormData(prev => ({
-          ...prev,
-          totalSeats: room.capacity.toString()
-        }));
+        setFormData(prev => {
+          const updatedData = { ...prev, totalSeats: room.capacity.toString() };
+          console.log('📝 After room change:', updatedData);
+          return updatedData;
+        });
       }
     }
 
@@ -243,6 +273,19 @@ const ShowtimeManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // 🔍 DEBUG: Log state ngay khi handleSubmit được gọi
+    console.log('🚀 handleSubmit called with formData:', {
+      movieId: formData.movieId,
+      theaterId: formData.theaterId,
+      roomId: formData.roomId,
+      date: formData.date,
+      time: formData.time,
+      price: formData.price,
+      totalSeats: formData.totalSeats
+    });
+    console.log('🏢 Selected theater details:', theaters.find(t => (t._id || t.id) === formData.theaterId));
+    console.log('🎬 Selected room details:', theaters.find(t => (t._id || t.id) === formData.theaterId)?.rooms?.find(r => (r._id || r.id) === formData.roomId));
+    
     try {
       // Validate required fields
       if (!formData.movieId || !formData.theaterId || !formData.roomId || 
@@ -261,9 +304,23 @@ const ShowtimeManagement = () => {
         totalSeats: parseInt(formData.totalSeats)
       };
 
-      // Debug logging
+      // Debug logging - chi tiết hơn
       console.log('📝 Submitting showtime data:', showtimeData);
       console.log('📋 Original form data:', formData);
+      console.log('🔍 Detailed data types:', {
+        theaterId: { value: formData.theaterId, type: typeof formData.theaterId },
+        roomId: { value: formData.roomId, type: typeof formData.roomId },
+        selectedTheater: theaters.find(t => (t._id || t.id) === formData.theaterId),
+        selectedRoom: theaters.find(t => (t._id || t.id) === formData.theaterId)?.rooms?.find(r => (r._id || r.id) === formData.roomId)
+      });
+      
+      // 🚨 CRITICAL DEBUG: Kiểm tra roomId thực tế được gửi
+      console.log('🚨 CRITICAL CHECK:');
+      console.log('   - formData.roomId:', formData.roomId);
+      console.log('   - showtimeData.roomId:', showtimeData.roomId);
+      console.log('   - Are they the same?', formData.roomId === showtimeData.roomId);
+      console.log('   - editingShowtime:', editingShowtime);
+      console.log('   - Is this an edit operation?', !!editingShowtime);
 
       if (editingShowtime) {
         await updateShowtime(editingShowtime._id || editingShowtime.id, showtimeData);
@@ -276,11 +333,20 @@ const ShowtimeManagement = () => {
     } catch (error) {
       console.error('Error saving showtime:', error);
       
-      // If there's a conflict, suggest using the time slot picker
-      if (error.conflict) {
-        // Go back to step 1 and show time conflicts
+      // Handle different types of conflicts
+      if (error.message.includes('Slot thời gian') || error.message.includes('đã được sử dụng')) {
+        // Show specific conflict message
+        setError(`⚠️ ${error.message}`);
+        // Go back to step 2 to show available time slots
         setCurrentStep(2);
         loadAvailableSlots();
+      } else if (error.conflict) {
+        // General time conflict, go to time slot picker
+        setCurrentStep(2);
+        loadAvailableSlots();
+      } else {
+        // Other errors
+        setError(`❌ ${error.message}`);
       }
     }
   };
@@ -391,12 +457,13 @@ const ShowtimeManagement = () => {
       return theaterData.name;
     }
     
+    // Xử lý trường hợp theaterData có thể là object hoặc string
+    const theaterIdValue = theaterData?._id || theaterData?.id || theaterData;
+    
     // Tìm theater theo ID
     const theater = theaters.find(t => {
-      return (t._id && t._id.toString() === theaterData.toString()) || 
-             (t.id && t.id.toString() === theaterData.toString()) ||
-             t._id === theaterData || 
-             t.id === theaterData;
+      const tId = t._id || t.id;
+      return tId && tId.toString() === theaterIdValue?.toString();
     });
     
     return theater?.name || 'Rạp không xác định';
@@ -410,11 +477,11 @@ const ShowtimeManagement = () => {
     }
     
     // Tìm theater với logic tương tự getTheaterName
+    // Xử lý trường hợp theaterId có thể là object hoặc string
+    const theaterIdValue = theaterId?._id || theaterId?.id || theaterId;
     const theater = theaters.find(t => {
-      return (t._id && t._id.toString() === theaterId.toString()) || 
-             (t.id && t.id.toString() === theaterId.toString()) ||
-             t._id === theaterId || 
-             t.id === theaterId;
+      const tId = t._id || t.id;
+      return tId && tId.toString() === theaterIdValue?.toString();
     });
     
     if (!theater || !theater.rooms) {
@@ -476,17 +543,23 @@ const ShowtimeManagement = () => {
             <AlertCircle className="w-5 h-5 text-red-400 mt-1 flex-shrink-0" />
             <div className="flex-1">
               <div className="text-red-400 whitespace-pre-line">{error}</div>
-              {error.includes('trùng') && (
-                <button
-                  onClick={() => {
-                    setError(null);
-                    setShowAddForm(true);
-                    setCurrentStep(2);
-                  }}
-                  className="mt-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
-                >
-                  🔍 Xem khung giờ khả dụng
-                </button>
+              {(error.includes('trùng') || error.includes('Slot thời gian') || error.includes('đã được sử dụng')) && (
+                <div className="mt-3 space-y-2">
+                  <div className="text-xs text-gray-400">
+                    💡 Gợi ý: Một phòng chỉ có thể chiếu một phim tại một thời điểm. Hãy chọn thời gian khác hoặc phòng khác.
+                  </div>
+                  <button
+                    onClick={() => {
+                      setError(null);
+                      setShowAddForm(true);
+                      setCurrentStep(2);
+                      loadAvailableSlots();
+                    }}
+                    className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                  >
+                    🔍 Xem khung giờ khả dụng
+                  </button>
+                </div>
               )}
             </div>
           </div>

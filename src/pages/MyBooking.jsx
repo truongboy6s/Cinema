@@ -39,6 +39,18 @@ const MyBooking = () => {
     }
   }, [user, navigate]);
 
+  // Debug log để kiểm tra booking data
+  useEffect(() => {
+    if (bookings && bookings.length > 0) {
+      console.log('🔍 MyBooking - All bookings:', bookings);
+      console.log('🔍 Sample booking status:', {
+        bookingStatus: bookings[0]?.bookingStatus,
+        paymentStatus: bookings[0]?.paymentStatus,
+        bookingCode: bookings[0]?.bookingCode
+      });
+    }
+  }, [bookings]);
+
   // Filter and sort bookings
   const getFilteredBookings = () => {
     let filtered = bookings || [];
@@ -230,14 +242,28 @@ const MyBooking = () => {
                   <div className="flex-1">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="text-xl font-bold text-white">{booking.movieId?.title || 'N/A'}</h3>
-                      <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        booking.bookingStatus === 'confirmed' ? 'bg-green-500/20 text-green-300' :
-                        booking.bookingStatus === 'cancelled' ? 'bg-red-500/20 text-red-300' :
-                        'bg-blue-500/20 text-blue-300'
-                      }`}>
-                        {booking.bookingStatus === 'confirmed' ? 'Đã xác nhận' :
-                         booking.bookingStatus === 'cancelled' ? 'Đã hủy' :
-                         booking.bookingStatus === 'completed' ? 'Hoàn thành' : 'Pending'}
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        {/* Booking Status */}
+                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          booking.bookingStatus === 'confirmed' ? 'bg-green-500/20 text-green-300' :
+                          booking.bookingStatus === 'cancelled' ? 'bg-red-500/20 text-red-300' :
+                          'bg-blue-500/20 text-blue-300'
+                        }`}>
+                          {booking.bookingStatus === 'confirmed' ? 'Đã xác nhận' :
+                           booking.bookingStatus === 'cancelled' ? 'Đã hủy' :
+                           booking.bookingStatus === 'completed' ? 'Hoàn thành' : 'Chờ xử lý'}
+                        </div>
+                        
+                        {/* Payment Status */}
+                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          booking.paymentStatus === 'paid' ? 'bg-emerald-500/20 text-emerald-300' :
+                          booking.paymentStatus === 'failed' ? 'bg-red-500/20 text-red-300' :
+                          'bg-amber-500/20 text-amber-300'
+                        }`}>
+                          {booking.paymentStatus === 'paid' ? 'Đã thanh toán' :
+                           booking.paymentStatus === 'failed' ? 'Thanh toán thất bại' :
+                           'Chưa thanh toán'}
+                        </div>
                       </div>
                     </div>
                     

@@ -156,9 +156,82 @@ const deleteUser = async (req, res) => {
   }
 };
 
+// Update user profile (for regular users)
+const updateUserProfile = async (req, res) => {
+  try {
+    const userId = req.user._id; // From auth middleware
+    const { name, phone, dateOfBirth, address } = req.body;
+
+    console.log('👤 User updating profile:', userId);
+    console.log('📋 Update data:', { name, phone, dateOfBirth, address });
+
+    // Validate required fields
+    if (!name || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tên và số điện thoại là bắt buộc'
+      });
+    }
+
+    // Check if phone number is already taken by another user
+    const existingUser = await User.findOne({ 
+      phone, 
+      _id: { $ne: userId } 
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Số điện thoại đã được sử dụng bởi tài khoản khác'
+      });
+    }
+
+    // Update user profile
+    const updateData = {
+      fullName: name,
+      phone,
+      address: address || null,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null
+    };
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    console.log('✅ Profile updated successfully');
+
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật thông tin thành công',
+      data: {
+        user: updatedUser
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error updating profile:', error);
+    
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Dữ liệu không hợp lệ',
+        error: error.message
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi cập nhật thông tin'
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserStats,
   updateUserStatus,
-  deleteUser
+  deleteUser,
+  updateUserProfile
 };

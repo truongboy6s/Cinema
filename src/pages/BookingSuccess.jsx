@@ -1,12 +1,62 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircle, Calendar, MapPin, Ticket, ArrowRight, Download } from 'lucide-react';
 import BlurCircle from '../components/BlurCircle';
+import TicketQRCode from '../components/TicketQRCode';
+import { useBookings } from '../contexts/BookingContext';
 
 const BookingSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const booking = location.state?.booking;
+  const { fetchUserBookings } = useBookings();
+
+  // Debug: Log booking data để kiểm tra structure
+  console.log('🔍 BookingSuccess - Full booking data:', booking);
+  console.log('🔍 Movie data:', booking?.movieId);
+  console.log('🔍 Theater data:', booking?.theaterId);
+  
+  // More detailed debugging
+  console.log('🔍 Detailed debug:', {
+    hasBooking: !!booking,
+    movieId: booking?.movieId,
+    movieTitle: booking?.movieId?.title,
+    theaterId: booking?.theaterId,
+    theaterName: booking?.theaterId?.name,
+    allKeys: booking ? Object.keys(booking) : []
+  });
+
+  // Refresh bookings when component mounts để ensure latest data
+  useEffect(() => {
+    fetchUserBookings();
+  }, []);
+
+  // Enrich booking data với room info nếu thiếu
+  const enrichedBooking = React.useMemo(() => {
+    if (!booking) return null;
+    
+    const enriched = { ...booking };
+    
+    // Nếu showtime không có room info, thử tìm từ theater rooms
+    if (enriched.showtimeId && !enriched.showtimeId.room && 
+        enriched.theaterId?.rooms && enriched.showtimeId.roomId) {
+      
+      const room = enriched.theaterId.rooms.find(r => 
+        r._id === enriched.showtimeId.roomId || 
+        r._id?.toString() === enriched.showtimeId.roomId?.toString()
+      );
+      
+      if (room) {
+        enriched.showtimeId = {
+          ...enriched.showtimeId,
+          room: room.name
+        };
+        console.log('✅ Enriched booking with room:', room.name);
+      }
+    }
+    
+    return enriched;
+  }, [booking]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', { 
@@ -75,8 +125,19 @@ const BookingSuccess = () => {
                   <MapPin className="w-5 h-5 text-cyan-400 mt-0.5" />
                   <div>
                     <p className="text-gray-400 text-sm">Rạp chiếu</p>
-                    <p className="text-white">{booking.theaterId?.name || 'N/A'}</p>
-                    <p className="text-gray-400 text-sm">{booking.theaterId?.location || 'N/A'}</p>
+                    <p className="text-white">{
+                      booking.theaterId?.name || 
+                      booking.theater?.name || 
+                      booking.theaterName || 
+                      'Đang tải...'
+                    }</p>
+                    <p className="text-gray-400 text-sm">{
+                      booking.theaterId?.location?.address || 
+                      booking.theaterId?.location || 
+                      booking.theater?.location || 
+                      booking.theaterLocation || 
+                      ''
+                    }</p>
                   </div>
                 </div>
               </div>
@@ -84,7 +145,12 @@ const BookingSuccess = () => {
               <div className="space-y-4">
                 <div>
                   <p className="text-gray-400 text-sm mb-2">Phim</p>
-                  <p className="text-white text-lg font-semibold">{booking.movieId?.title || 'N/A'}</p>
+                  <p className="text-white text-lg font-semibold">{
+                    booking.movieId?.title || 
+                    booking.movie?.title || 
+                    booking.movieTitle || 
+                    'Đang tải...'
+                  }</p>
                 </div>
 
                 <div>
@@ -142,6 +208,11 @@ const BookingSuccess = () => {
           >
             Đặt vé phim khác
           </button>
+        </div>
+
+        {/* QR Code Section */}
+        <div className="mt-8">
+          <TicketQRCode booking={enrichedBooking} />
         </div>
 
         {/* Instructions */}

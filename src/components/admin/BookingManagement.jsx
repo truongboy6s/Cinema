@@ -288,9 +288,15 @@ const BookingManagement = () => {
                       
                       <td className="p-4">
                         <div>
-                          <div className="text-white font-medium">{booking.customerInfo?.name || 'N/A'}</div>
-                          <div className="text-gray-400 text-sm">{booking.customerInfo?.email || 'N/A'}</div>
-                          <div className="text-gray-500 text-xs">{booking.customerInfo?.phone || 'N/A'}</div>
+                          <div className="text-white font-medium">
+                            {booking.customerInfo?.name || booking.userId?.name || 'N/A'}
+                          </div>
+                          <div className="text-gray-400 text-sm">
+                            {booking.customerInfo?.email || booking.userId?.email || 'N/A'}
+                          </div>
+                          <div className="text-gray-500 text-xs">
+                            {booking.customerInfo?.phone || booking.userId?.phone || 'N/A'}
+                          </div>
                         </div>
                       </td>
                       
@@ -412,9 +418,9 @@ const BookingManagement = () => {
                       <div>
                         <h3 className="text-lg font-semibold text-white mb-3">Thông tin khách hàng</h3>
                         <div className="space-y-2 text-sm">
-                          <div><span className="text-gray-400">Tên:</span> <span className="text-white">{selectedBooking.customerInfo.name}</span></div>
-                          <div><span className="text-gray-400">Email:</span> <span className="text-white">{selectedBooking.customerInfo.email}</span></div>
-                          <div><span className="text-gray-400">SĐT:</span> <span className="text-white">{selectedBooking.customerInfo.phone}</span></div>
+                          <div><span className="text-gray-400">Tên:</span> <span className="text-white">{selectedBooking.customerInfo?.name || selectedBooking.userId?.name || 'N/A'}</span></div>
+                          <div><span className="text-gray-400">Email:</span> <span className="text-white">{selectedBooking.customerInfo?.email || selectedBooking.userId?.email || 'N/A'}</span></div>
+                          <div><span className="text-gray-400">SĐT:</span> <span className="text-white">{selectedBooking.customerInfo?.phone || selectedBooking.userId?.phone || 'N/A'}</span></div>
                         </div>
                       </div>
                     </div>
