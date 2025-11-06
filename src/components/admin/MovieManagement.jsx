@@ -7,6 +7,13 @@ const MovieManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMovie, setEditingMovie] = useState(null);
+  
+  // Debug: Log movies data to check structure
+  console.log('🎬 Movies data structure:', movies);
+  if (movies.length > 0) {
+    console.log('🎬 First movie fields:', Object.keys(movies[0]));
+    console.log('🎬 First movie data:', movies[0]);
+  }
   const [formData, setFormData] = useState({
     title: '',
     genre: '',
@@ -30,6 +37,7 @@ const MovieManagement = () => {
         return 'bg-green-500/20 text-green-400';
       case 'upcoming':
       case 'coming-soon':
+      case 'coming_soon':
         return 'bg-yellow-500/20 text-yellow-400';
       case 'ended':
         return 'bg-red-500/20 text-red-400';
@@ -44,6 +52,7 @@ const MovieManagement = () => {
         return 'Đang chiếu';
       case 'upcoming':
       case 'coming-soon':
+      case 'coming_soon':
         return 'Sắp chiếu';
       case 'ended':
         return 'Đã kết thúc';
@@ -276,7 +285,34 @@ const MovieManagement = () => {
 
                 <div className="flex items-center text-gray-400 text-sm">
                   <Calendar className="w-4 h-4 mr-1" />
-                  {movie.release_date ? new Date(movie.release_date).toLocaleDateString('vi-VN') : 'Chưa cập nhật'}
+                  {(() => {
+                    // Debug: Check what date fields are available
+                    console.log('🎬 Movie date fields for', movie.title, ':', {
+                      release_date: movie.release_date,
+                      releaseDate: movie.releaseDate,
+                      release_Date: movie.release_Date,
+                      status: movie.status
+                    });
+                    
+                    // Try different possible date field names
+                    const releaseDate = movie.release_date || movie.releaseDate || movie.release_Date || movie.releasedate;
+                    
+                    if (releaseDate) {
+                      try {
+                        return new Date(releaseDate).toLocaleDateString('vi-VN');
+                      } catch (error) {
+                        console.log('🎬 Date parsing error:', error);
+                        return 'Ngày không hợp lệ';
+                      }
+                    }
+                    
+                    // If it's an upcoming movie but no date, show appropriate message
+                    if (movie.status === 'upcoming' || movie.status === 'coming-soon' || movie.status === 'coming_soon') {
+                      return 'Sắp chiếu';
+                    }
+                    
+                    return 'Chưa cập nhật';
+                  })()}
                 </div>
               </div>
 

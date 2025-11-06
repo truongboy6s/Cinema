@@ -109,17 +109,24 @@ const AdminWelcome = () => {
   const movieStats = useMemo(() => {
     const today = new Date();
     const movieArray = movies || [];
+    
+    console.log('🎬 Movie stats debug:', movieArray.map(m => ({
+      title: m.title,
+      status: m.status,
+      release_date: m.release_date,
+      releaseInFuture: m.release_date ? new Date(m.release_date) > today : false
+    })));
+    
     const showingMovies = movieArray.filter(movie => movie.status === 'showing').length;
+    
+    // Logic đơn giản hơn: chỉ dựa vào status chính thức
     const comingSoonMovies = movieArray.filter(movie => {
-      if (movie.status === 'coming_soon') return true;
-      // Nếu release_date trong tương lai thì cũng là sắp chiếu
-      if (movie.release_date) {
-        const releaseDate = new Date(movie.release_date);
-        return releaseDate > today;
-      }
-      return false;
+      return movie.status === 'coming_soon';
     }).length;
+    
     const endedMovies = movieArray.filter(movie => movie.status === 'ended').length;
+    
+    console.log('🎬 Final movie stats:', { showingMovies, comingSoonMovies, endedMovies, total: movieArray.length });
     
     return { showingMovies, comingSoonMovies, endedMovies, total: movieArray.length };
   }, [movies]);

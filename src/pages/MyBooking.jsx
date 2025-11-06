@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Ticket, Clock, MapPin, CreditCard, Star, Trash2, Eye, CheckCircle, XCircle, AlertCircle, Calendar, Search, Filter } from 'lucide-react';
+import { Ticket, Clock, MapPin, CreditCard, Star, Trash2, Eye, CheckCircle, XCircle, AlertCircle, Calendar, Search, Filter, Home } from 'lucide-react';
 import BlurCircle from '../components/BlurCircle';
 import timeFormat from '../lib/timeFormat';
 import { useMovies } from '../contexts/MovieContext';
@@ -285,6 +285,26 @@ const MyBooking = () => {
                       <div className="flex items-center gap-2">
                         <MapPin className="w-5 h-5 text-green-500" />
                         <span>{formatTheaterLocation(booking.theaterId)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Home className="w-5 h-5 text-orange-500" />
+                        <span>Phòng: {(() => {
+                          // Sử dụng roomName từ backend nếu có
+                          if (booking.roomName) {
+                            return booking.roomName;
+                          }
+                          
+                          // Fallback: tìm từ theater rooms và showtime roomId
+                          const roomId = booking.showtimeId?.roomId;
+                          const rooms = booking.theaterId?.rooms;
+                          
+                          if (roomId && rooms && rooms.length > 0) {
+                            const room = rooms.find(r => r._id === roomId || r.id === roomId);
+                            return room?.name || `Phòng ${roomId}`;
+                          }
+                          
+                          return 'Không xác định';
+                        })()}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Ticket className="w-5 h-5 text-purple-500" />

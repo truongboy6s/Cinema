@@ -70,7 +70,7 @@ const createBooking = async (req, res) => {
       totalAmount,
       paymentMethod,
       customerInfo: {
-        name: customerInfo.name || req.user.name,
+        name: customerInfo.name || req.user.fullName || req.user.name,
         email: customerInfo.email || req.user.email,
         phone: customerInfo.phone || req.user.phone
       },
@@ -91,10 +91,10 @@ const createBooking = async (req, res) => {
 
     // Populate booking for response
     const populatedBooking = await Booking.findById(booking._id)
-      .populate('movieId', 'title duration poster genre')
+      .populate('movieId', 'title duration poster')
       .populate('theaterId', 'name location')
       .populate('showtimeId', 'date time')
-      .populate('userId', 'name email phone');
+      .populate('userId', 'fullName email phone');
 
     res.status(201).json({
       success: true,
@@ -125,25 +125,48 @@ const getUserBookings = async (req, res) => {
 
     const bookings = await Booking.find(query)
       .populate('movieId', 'title duration poster genre')
-      .populate('theaterId', 'name location')
-      .populate('showtimeId', 'date time')
+      .populate('theaterId', 'name location rooms')
+      .populate('showtimeId', 'date time roomId')
       .sort({ bookingDate: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
     const total = await Booking.countDocuments(query);
 
+    // Thêm thông tin tên phòng vào bookings
+    const bookingsWithRoomInfo = bookings.map(booking => {
+      const bookingObj = booking.toObject();
+      
+      // Thêm thông tin tên phòng từ theater rooms
+      let roomName = 'Không xác định';
+      if (bookingObj.theaterId?.rooms && bookingObj.showtimeId?.roomId) {
+        const room = bookingObj.theaterId.rooms.find(r => 
+          r._id.toString() === bookingObj.showtimeId.roomId.toString()
+        );
+        roomName = room ? room.name : `Phòng ${bookingObj.showtimeId.roomId}`;
+      }
+      
+      // Thêm thông tin phòng vào showtime và booking object
+      if (bookingObj.showtimeId) {
+        bookingObj.showtimeId.room = roomName;
+      }
+      bookingObj.roomName = roomName; // Thêm trường này để dễ access từ frontend
+      
+      return bookingObj;
+    });
+
     // Debug log để check booking status
-    console.log('📋 getUserBookings - Sample booking statuses:', bookings.slice(0, 2).map(b => ({
+    console.log('📋 getUserBookings - Sample booking statuses:', bookingsWithRoomInfo.slice(0, 2).map(b => ({
       id: b._id,
       bookingStatus: b.bookingStatus,
       paymentStatus: b.paymentStatus,
-      bookingCode: b.bookingCode
+      bookingCode: b.bookingCode,
+      roomName: b.roomName
     })));
 
     res.json({
       success: true,
-      data: bookings,
+      data: bookingsWithRoomInfo,
       pagination: {
         current: parseInt(page),
         pages: Math.ceil(total / limit),
@@ -171,7 +194,7 @@ const getBookingById = async (req, res) => {
       .populate('movieId', 'title duration poster genre')
       .populate('theaterId', 'name location rooms')
       .populate('showtimeId', 'date time roomId')
-      .populate('userId', 'name email phone');
+      .populate('userId', 'fullName email phone');
 
     if (!booking) {
       return res.status(404).json({
@@ -368,26 +391,51 @@ const getAllBookings = async (req, res) => {
     }
 
     const bookings = await Booking.find(query)
-      .populate('userId', 'name email phone')
+      .populate('userId', 'fullName email phone')
       .populate('movieId', 'title poster')
-      .populate('theaterId', 'name location')
-      .populate('showtimeId', 'date time')
+      .populate('theaterId', 'name location rooms')
+      .populate('showtimeId', 'date time roomId')
       .sort({ bookingDate: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    // Fix booking data để ensure customerInfo có data
+    // Fix booking data để ensure customerInfo có data và thêm thông tin phòng
     const bookingsWithCustomerInfo = bookings.map(booking => {
       const bookingObj = booking.toObject();
       
       // Nếu customerInfo trống hoặc không có, lấy từ populated userId
-      if (!bookingObj.customerInfo || !bookingObj.customerInfo.name) {
+      if (!bookingObj.customerInfo || !bookingObj.customerInfo.name || bookingObj.customerInfo.name === 'N/A') {
         bookingObj.customerInfo = {
-          name: bookingObj.userId?.name || 'N/A',
-          email: bookingObj.userId?.email || 'N/A',
-          phone: bookingObj.userId?.phone || 'N/A'
+          name: bookingObj.userId?.fullName || bookingObj.userId?.name || 'Khách hàng',
+          email: bookingObj.userId?.email || bookingObj.customerInfo?.email || 'N/A',
+          phone: bookingObj.userId?.phone || bookingObj.customerInfo?.phone || 'N/A'
         };
       }
+      
+      // Thêm thông tin tên phòng từ theater rooms
+      let roomName = 'Không xác định';
+      console.log('🏠 getAllBookings Room Debug:', {
+        hasTheater: !!bookingObj.theaterId,
+        hasRooms: !!bookingObj.theaterId?.rooms,
+        roomsCount: bookingObj.theaterId?.rooms?.length,
+        hasShowtime: !!bookingObj.showtimeId,
+        roomId: bookingObj.showtimeId?.roomId,
+        theaterRooms: bookingObj.theaterId?.rooms?.map(r => ({ id: r._id, name: r.name }))
+      });
+      
+      if (bookingObj.theaterId?.rooms && bookingObj.showtimeId?.roomId) {
+        const room = bookingObj.theaterId.rooms.find(r => 
+          r._id.toString() === bookingObj.showtimeId.roomId.toString()
+        );
+        roomName = room ? room.name : `Phòng ${bookingObj.showtimeId.roomId}`;
+        console.log('🏠 getAllBookings Room result:', { found: !!room, roomName });
+      }
+      
+      // Thêm thông tin phòng vào showtime và booking object
+      if (bookingObj.showtimeId) {
+        bookingObj.showtimeId.room = roomName;
+      }
+      bookingObj.roomName = roomName; // Thêm trường này để dễ access từ frontend
       
       return bookingObj;
     });
@@ -501,7 +549,7 @@ const simulatePaymentSuccess = async (req, res) => {
       .populate('movieId', 'title duration poster genre')
       .populate('theaterId', 'name location rooms')
       .populate('showtimeId', 'date time roomId')
-      .populate('userId', 'name email phone');
+      .populate('userId', 'fullName email phone');
 
     // Get room info từ theater rooms
     let roomName = 'N/A';
@@ -530,7 +578,7 @@ const simulatePaymentSuccess = async (req, res) => {
     // Ensure customerInfo có đầy đủ thông tin
     if (!populatedBooking.customerInfo || !populatedBooking.customerInfo.name) {
       populatedBooking.customerInfo = {
-        name: populatedBooking.userId?.name || 'Khách hàng',
+        name: populatedBooking.userId?.fullName || populatedBooking.userId?.name || 'Khách hàng',
         email: populatedBooking.userId?.email || populatedBooking.customerInfo?.email || 'N/A',
         phone: populatedBooking.userId?.phone || populatedBooking.customerInfo?.phone || 'N/A'
       };
@@ -600,7 +648,7 @@ const simulatePaymentFailure = async (req, res) => {
       .populate('movieId', 'title duration poster genre')
       .populate('theaterId', 'name location')
       .populate('showtimeId', 'date time')
-      .populate('userId', 'name email phone');
+      .populate('userId', 'fullName email phone');
 
     console.log('❌ Payment simulation failed for booking:', bookingId);
 
