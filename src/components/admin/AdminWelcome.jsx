@@ -169,8 +169,8 @@ const AdminWelcome = () => {
   const quickActions = [
     { icon: Users, label: 'Quản lý người dùng', path: '/admin/users', color: 'from-emerald-500 to-teal-500' },
     { icon: Film, label: 'Quản lý phim', path: '/admin/movies', color: 'from-blue-500 to-cyan-500' },
-    { icon: Calendar, label: 'Lịch chiếu', path: '/admin/showtimes', color: 'from-green-500 to-emerald-500' },
-    { icon: MapPin, label: 'Rạp chiếu', path: '/admin/theaters', color: 'from-purple-500 to-pink-500' },
+    { icon: MapPin, label: 'Rạp chiếu', path: '/admin/theaters', color: 'from-green-500 to-emerald-500' },
+    { icon: Calendar, label: 'Lịch chiếu', path: '/admin/showtimes', color: 'from-purple-500 to-pink-500' },
     { icon: CreditCard, label: 'Đặt vé', path: '/admin/bookings', color: 'from-orange-500 to-red-500' }
   ];
 

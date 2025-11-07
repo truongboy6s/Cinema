@@ -113,78 +113,98 @@ const Theaters = () => {
 
         {/* Theaters Grid */}
         {filteredTheaters.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
             {filteredTheaters.map((theater) => (
-              <div key={theater._id} className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
-                <div className="w-full h-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl mb-4 flex items-center justify-center">
+              <div
+                key={theater._id}
+                className="flex flex-col bg-gradient-to-b from-gray-900/90 to-black/90 rounded-2xl border border-white/10 p-5 shadow-lg hover:shadow-cyan-500/20 transition-all duration-300 hover:-translate-y-1"
+              >
+                {/* Ảnh hoặc Placeholder */}
+                <div className="relative w-full h-44 bg-gray-800 rounded-xl mb-4 flex items-center justify-center overflow-hidden">
                   <div className="text-gray-500 text-center">
                     <MapPin className="w-8 h-8 mx-auto mb-2" />
                     <p className="text-sm">Rạp {theater?.name}</p>
                   </div>
                 </div>
-                <h3 className="font-semibold text-white text-lg mb-2">{theater?.name}</h3>
-                <p className="text-sm text-gray-400 mb-4 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-green-500" />
-                  {theater?.location?.city && theater?.location?.district 
-                    ? `${theater?.location?.district}, ${theater?.location?.city}`
-                    : theater?.address || 'Địa chỉ chưa cập nhật'
-                  }
-                </p>
-                
-                {/* Theater Info */}
-                <div className="mb-4 space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Sức chứa:</span>
-                    <span className="text-white font-medium">{theater?.capacity || 0} ghế</span>
+
+                {/* Tên và Địa chỉ */}
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg text-white text-center mb-2">
+                    {theater.name}
+                  </h3>
+                  <p className="text-sm text-gray-400 mb-4 text-center flex items-center justify-center gap-1">
+                    <MapPin className="w-4 h-4 text-green-500" />
+                    {theater?.location?.district && theater?.location?.city
+                      ? `${theater.location.district}, ${theater.location.city}`
+                      : theater.address || 'Địa chỉ chưa cập nhật'}
+                  </p>
+
+                  {/* Thông tin cơ bản */}
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Sức chứa:</span>
+                      <span className="text-white font-semibold">
+                        {theater.capacity || 0} ghế
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Số phòng:</span>
+                      <span className="text-white font-semibold">
+                        {theater.rooms?.length || 0} phòng
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Số phòng:</span>
-                    <span className="text-white font-medium">{theater.rooms?.length || 0} phòng</span>
-                  </div>
-                  {theater?.facilities && theater.facilities.length > 0 && (
-                    <div className="mt-2">
+
+                  {/* Tiện ích */}
+                  {theater.facilities?.length > 0 && (
+                    <div className="mt-3">
                       <p className="text-xs text-gray-400 mb-1">Tiện ích:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {theater.facilities.slice(0, 3).map((facility, index) => (
-                          <span 
-                            key={index}
-                            className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded"
+                      <div className="flex flex-wrap gap-1.5">
+                        {theater.facilities.slice(0, 3).map((facility, i) => (
+                          <span
+                            key={i}
+                            className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs rounded-full"
                           >
                             {facility}
                           </span>
                         ))}
                         {theater.facilities.length > 3 && (
-                          <span className="px-2 py-1 bg-gray-500/20 text-gray-400 text-xs rounded">
+                          <span className="px-2 py-0.5 bg-gray-600/30 text-gray-400 text-xs rounded-full">
                             +{theater.facilities.length - 3}
                           </span>
                         )}
                       </div>
                     </div>
                   )}
-                </div>
-                {/* Rooms List */}
-                {theater?.rooms && theater.rooms.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-300 mb-2">Phòng chiếu</h4>
-                    <div className="space-y-1">
-                      {theater.rooms.slice(0, 2).map((room, idx) => (
-                        <p key={idx} className="text-xs text-gray-400 flex items-center gap-2">
-                          <Clock className="w-3 h-3 text-blue-500" />
-                          {room?.name}: {room?.capacity} ghế ({room?.type})
-                        </p>
-                      ))}
-                      {theater.rooms.length > 2 && (
-                        <p className="text-xs text-gray-500">
-                          +{theater.rooms.length - 2} phòng khác
-                        </p>
-                      )}
+
+                  {/* Phòng chiếu */}
+                  {theater.rooms?.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-xs text-gray-400 mb-1">Phòng chiếu:</p>
+                      <div className="space-y-1">
+                        {theater.rooms.slice(0, 2).map((room, idx) => (
+                          <p
+                            key={idx}
+                            className="text-xs text-gray-300 flex items-center gap-2"
+                          >
+                            <Clock className="w-3 h-3 text-blue-500" />
+                            {room.name}: {room.capacity} ghế ({room.type})
+                          </p>
+                        ))}
+                        {theater.rooms.length > 2 && (
+                          <p className="text-xs text-gray-500">
+                            +{theater.rooms.length - 2} phòng khác
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
-                
+                  )}
+                </div>
+
+                {/* Nút hành động */}
                 <button
                   onClick={() => navigate(`/theaters/${theater._id}`)}
-                  className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full font-medium text-sm shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+                  className="mt-5 w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full font-medium text-sm shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
                 >
                   <Ticket className="w-4 h-4" /> Xem Chi Tiết
                 </button>
@@ -208,6 +228,7 @@ const Theaters = () => {
             </button>
           </div>
         )}
+
       </div>
     </div>
   );
