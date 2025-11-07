@@ -11,6 +11,19 @@ const BookingManagement = () => {
   const { theaters } = useTheaters();
   const { showtimes } = useShowtimes();
   
+  // Debug: Log bookings data to check structure
+  console.log('📚 Bookings data structure:', bookings);
+  if (bookings.length > 0) {
+    console.log('📚 First booking fields:', Object.keys(bookings[0]));
+    console.log('📚 First booking data:', bookings[0]);
+    console.log('📚 First booking customer info:', {
+      customerInfo: bookings[0].customerInfo,
+      userId: bookings[0].userId,
+      user: bookings[0].user,
+      customer: bookings[0].customer
+    });
+  }
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
@@ -289,13 +302,50 @@ const BookingManagement = () => {
                       <td className="p-4">
                         <div>
                           <div className="text-white font-medium">
-                            {booking.customerInfo?.name || booking.userId?.name || 'N/A'}
+                            {(() => {
+                              // Debug: Check what customer fields are available
+                              console.log('📚 Customer fields for booking', booking.bookingCode, ':', {
+                                customerInfo: booking.customerInfo,
+                                customerInfoKeys: booking.customerInfo ? Object.keys(booking.customerInfo) : 'null',
+                                userId: booking.userId,
+                                userIdKeys: booking.userId ? Object.keys(booking.userId) : 'null'
+                              });
+                              
+                              // Try different possible customer name fields
+                              // Skip customerInfo.name if it's 'N/A'
+                              const customerName = booking.customerInfo?.name;
+                              
+                              if (customerName && customerName !== 'N/A') {
+                                return customerName;
+                              }
+                              
+                              // Try userId fields or construct name from email
+                              return booking.userId?.name || 
+                                     booking.userId?.fullName ||
+                                     booking.user?.name ||
+                                     booking.customer?.name ||
+                                     booking.customerName ||
+                                     (booking.userId?.email ? booking.userId.email.split('@')[0] : null) ||
+                                     (booking.customerInfo?.email && booking.customerInfo.email !== 'N/A' ? 
+                                       booking.customerInfo.email.split('@')[0] : null) ||
+                                     'Khách hàng';
+                            })()}
                           </div>
                           <div className="text-gray-400 text-sm">
-                            {booking.customerInfo?.email || booking.userId?.email || 'N/A'}
+                            {booking.customerInfo?.email || 
+                             booking.userId?.email || 
+                             booking.user?.email ||
+                             booking.customer?.email ||
+                             booking.customerEmail ||
+                             'N/A'}
                           </div>
-                          <div className="text-gray-500 text-xs">
-                            {booking.customerInfo?.phone || booking.userId?.phone || 'N/A'}
+                          <div className="text-gray-400 text-sm">
+                            {booking.customerInfo?.phone || 
+                             booking.userId?.phone || 
+                             booking.user?.phone ||
+                             booking.customer?.phone ||
+                             booking.customerPhone ||
+                             'N/A'}
                           </div>
                         </div>
                       </td>
@@ -308,7 +358,33 @@ const BookingManagement = () => {
                         <div>
                           <div className="text-white">{theater?.name || 'N/A'}</div>
                           <div className="text-gray-400 text-sm">
-                            Ghế: {booking.seats?.map(seat => seat.seatNumber || seat).join(', ') || 'N/A'}
+                            Phòng: {(() => {
+                              const roomId = booking.showtimeId?.roomId || booking.roomId;
+                              const rooms = theater?.rooms;
+                              
+                              if (roomId && rooms && rooms.length > 0) {
+                                const room = rooms.find(r => r._id === roomId || r.id === roomId);
+                                return room?.name || `Phòng ${roomId}`;
+                              }
+                              
+                              return booking.roomName || booking.room?.name || 'Không xác định';
+                            })()}
+                          </div>
+                          <div className="text-gray-400 text-sm">
+                            Ghế: {(() => {
+                              if (!booking.seats || booking.seats.length === 0) {
+                                return 'N/A';
+                              }
+                              
+                              return booking.seats.map(seat => {
+                                if (typeof seat === 'string') {
+                                  return seat;
+                                } else if (seat && typeof seat === 'object') {
+                                  return seat.seatNumber || seat.number || seat.name || seat.id || 'Ghế không xác định';
+                                }
+                                return seat;
+                              }).join(', ');
+                            })()}
                           </div>
                         </div>
                       </td>
@@ -401,6 +477,16 @@ const BookingManagement = () => {
               {(() => {
                 const { movie, theater, showtime } = getBookingDetails(selectedBooking);
                 
+                // Debug: Log selected booking structure
+                console.log('📚 Selected booking detailed structure:', {
+                  selectedBooking,
+                  movie,
+                  theater,
+                  showtime,
+                  seats: selectedBooking.seats,
+                  showtimeId: selectedBooking.showtimeId
+                });
+                
                 return (
                   <div className="space-y-6">
                     {/* Booking Info */}
@@ -418,9 +504,41 @@ const BookingManagement = () => {
                       <div>
                         <h3 className="text-lg font-semibold text-white mb-3">Thông tin khách hàng</h3>
                         <div className="space-y-2 text-sm">
-                          <div><span className="text-gray-400">Tên:</span> <span className="text-white">{selectedBooking.customerInfo?.name || selectedBooking.userId?.name || 'N/A'}</span></div>
-                          <div><span className="text-gray-400">Email:</span> <span className="text-white">{selectedBooking.customerInfo?.email || selectedBooking.userId?.email || 'N/A'}</span></div>
-                          <div><span className="text-gray-400">SĐT:</span> <span className="text-white">{selectedBooking.customerInfo?.phone || selectedBooking.userId?.phone || 'N/A'}</span></div>
+                          <div><span className="text-gray-400">Tên:</span> <span className="text-white">{
+                            (() => {
+                              const customerName = selectedBooking.customerInfo?.name;
+                              
+                              if (customerName && customerName !== 'N/A') {
+                                return customerName;
+                              }
+                              
+                              return selectedBooking.userId?.name || 
+                                     selectedBooking.userId?.fullName ||
+                                     selectedBooking.user?.name ||
+                                     selectedBooking.customer?.name ||
+                                     selectedBooking.customerName ||
+                                     (selectedBooking.userId?.email ? selectedBooking.userId.email.split('@')[0] : null) ||
+                                     (selectedBooking.customerInfo?.email && selectedBooking.customerInfo.email !== 'N/A' ? 
+                                       selectedBooking.customerInfo.email.split('@')[0] : null) ||
+                                     'Khách hàng';
+                            })()
+                          }</span></div>
+                          <div><span className="text-gray-400">Email:</span> <span className="text-white">{
+                            selectedBooking.customerInfo?.email || 
+                            selectedBooking.userId?.email || 
+                            selectedBooking.user?.email ||
+                            selectedBooking.customer?.email ||
+                            selectedBooking.customerEmail ||
+                            'N/A'
+                          }</span></div>
+                          <div><span className="text-gray-400">SĐT:</span> <span className="text-white">{
+                            selectedBooking.customerInfo?.phone || 
+                            selectedBooking.userId?.phone || 
+                            selectedBooking.user?.phone ||
+                            selectedBooking.customer?.phone ||
+                            selectedBooking.customerPhone ||
+                            'N/A'
+                          }</span></div>
                         </div>
                       </div>
                     </div>
@@ -431,11 +549,85 @@ const BookingManagement = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div className="space-y-2">
                           <div><span className="text-gray-400">Phim:</span> <span className="text-white">{movie?.title || 'N/A'}</span></div>
-                          <div><span className="text-gray-400">Thời gian chiếu:</span> <span className="text-white">{showtime ? formatDate(showtime.datetime) : 'N/A'}</span></div>
+                          <div><span className="text-gray-400">Thời gian chiếu:</span> <span className="text-white">{
+                            (() => {
+                              // Try different date fields
+                              if (showtime?.datetime) {
+                                try {
+                                  return formatDate(showtime.datetime);
+                                } catch (error) {
+                                  console.log('Date format error:', error);
+                                }
+                              }
+                              
+                              // Fallback to booking date/time fields
+                              if (selectedBooking.showDate && selectedBooking.showTime) {
+                                return `${selectedBooking.showDate} ${selectedBooking.showTime}`;
+                              }
+                              
+                              // Try showtime date/time
+                              if (showtime?.date && showtime?.time) {
+                                return `${showtime.date} ${showtime.time}`;
+                              }
+                              
+                              return 'N/A';
+                            })()
+                          }</span></div>
                         </div>
                         <div className="space-y-2">
                           <div><span className="text-gray-400">Rạp:</span> <span className="text-white">{theater?.name || 'N/A'}</span></div>
-                          <div><span className="text-gray-400">Ghế đã chọn:</span> <span className="text-white">{selectedBooking.seats?.join(', ') || 'N/A'}</span></div>
+                          <div><span className="text-gray-400">Phòng:</span> <span className="text-white">{
+                            (() => {
+                              // Debug room info
+                              console.log('🏠 Room debug info:', {
+                                showtimeId: selectedBooking.showtimeId,
+                                roomId: selectedBooking.roomId,
+                                theater,
+                                rooms: theater?.rooms,
+                                showtime
+                              });
+                              
+                              // Try to get room info from various sources
+                              const roomId = selectedBooking.showtimeId?.roomId || 
+                                           selectedBooking.roomId || 
+                                           showtime?.roomId;
+                              const rooms = theater?.rooms;
+                              
+                              if (roomId && rooms && rooms.length > 0) {
+                                const room = rooms.find(r => r._id === roomId || r.id === roomId || r._id?.toString() === roomId?.toString());
+                                if (room) {
+                                  return room.name || `Phòng ${roomId}`;
+                                }
+                              }
+                              
+                              // Try room name from showtime
+                              if (showtime?.room?.name) {
+                                return showtime.room.name;
+                              }
+                              
+                              // Fallback: try to extract from booking fields
+                              return selectedBooking.roomName || 
+                                     selectedBooking.room?.name ||
+                                     (roomId ? `Phòng ${roomId}` : 'Không xác định');
+                            })()
+                          }</span></div>
+                          <div><span className="text-gray-400">Ghế đã chọn:</span> <span className="text-white">{
+                            (() => {
+                              if (!selectedBooking.seats || selectedBooking.seats.length === 0) {
+                                return 'N/A';
+                              }
+                              
+                              // Handle different seat formats
+                              return selectedBooking.seats.map(seat => {
+                                if (typeof seat === 'string') {
+                                  return seat;
+                                } else if (seat && typeof seat === 'object') {
+                                  return seat.seatNumber || seat.number || seat.name || seat.id || 'Ghế không xác định';
+                                }
+                                return seat;
+                              }).join(', ');
+                            })()
+                          }</span></div>
                         </div>
                       </div>
                     </div>
