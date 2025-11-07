@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
-import { Search, Grid3X3, List, Star, Loader2, X } from 'lucide-react';
+import { Search, Grid3X3, List, Star, Loader2, X, Heart, User } from 'lucide-react';
 import BlurCircle from '../components/BlurCircle';
+import { useAuth } from '../contexts/AuthContext';
 
 const Favorites = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -14,10 +16,56 @@ const Favorites = () => {
 
   // Load favorites from localStorage
   useEffect(() => {
-    const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || [];
-    setFavorites(storedFavorites);
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    
+    const loadFavorites = () => {
+      // Sử dụng userId để tạo key riêng cho mỗi user
+      const userFavoritesKey = `yeuThichPhim_${user._id || user.id}`;
+      let storedFavorites = JSON.parse(localStorage.getItem(userFavoritesKey)) || [];
+      
+      // Migration: nếu chưa có dữ liệu cho user này, check dữ liệu cũ
+      if (storedFavorites.length === 0) {
+        const oldFavorites = JSON.parse(localStorage.getItem('yeuThichPhim')) || [];
+        if (oldFavorites.length > 0) {
+          // Di chuyển dữ liệu cũ sang user hiện tại
+          localStorage.setItem(userFavoritesKey, JSON.stringify(oldFavorites));
+          // Xóa dữ liệu cũ
+          localStorage.removeItem('yeuThichPhim');
+          storedFavorites = oldFavorites;
+        }
+      }
+      
+      setFavorites(storedFavorites);
+    };
+    
+    loadFavorites();
     setLoading(false);
-  }, []);
+    
+    // Listen for localStorage changes (when favorites are updated from other pages)
+    const handleStorageChange = (e) => {
+      const userFavoritesKey = `yeuThichPhim_${user._id || user.id}`;
+      if (e.key === userFavoritesKey) {
+        loadFavorites();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom events (for same-tab updates)
+    const handleFavoritesUpdate = () => {
+      loadFavorites();
+    };
+    
+    window.addEventListener('favoritesUpdated', handleFavoritesUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
+    };
+  }, [user]);
 
   // Filter favorites based on search query
   useEffect(() => {
@@ -32,9 +80,17 @@ const Favorites = () => {
 
   // Handle remove from favorites
   const handleRemoveFavorite = (movieId) => {
+    if (!user) return;
+    
     const newFavorites = favorites.filter(movie => movie._id !== movieId);
     setFavorites(newFavorites);
-    localStorage.setItem('favorites', JSON.stringify(newFavorites));
+    
+    // Sử dụng userId để tạo key riêng cho mỗi user
+    const userFavoritesKey = `yeuThichPhim_${user._id || user.id}`;
+    localStorage.setItem(userFavoritesKey, JSON.stringify(newFavorites));
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('favoritesUpdated'));
   };
 
   if (loading) {
@@ -53,10 +109,50 @@ const Favorites = () => {
     );
   }
 
+  // Nếu chưa đăng nhập
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 pt-24 px-4">
+        <BlurCircle top="100px" left="0" />
+        <BlurCircle bottom="100px" right="0" />
+        
+        <div className="max-w-7xl mx-auto text-center py-20">
+          <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+            <User className="w-12 h-12 text-gray-600" />
+          </div>
+          <h2 className="text-white text-2xl font-bold mb-4">Vui lòng đăng nhập</h2>
+          <p className="text-gray-400 mb-6 max-w-md mx-auto">
+            Bạn cần đăng nhập để xem danh sách phim yêu thích của mình.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => navigate('/login')}
+              className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors duration-300"
+            >
+              Đăng nhập
+            </button>
+            <button
+              onClick={() => navigate('/register')}
+              className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors duration-300"
+            >
+              Đăng ký
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (favorites.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 pt-24 px-4">
+        <BlurCircle top="100px" left="0" />
+        <BlurCircle bottom="100px" right="0" />
+        
         <div className="max-w-7xl mx-auto text-center py-20">
+          <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Heart className="w-12 h-12 text-gray-600" />
+          </div>
           <h2 className="text-white text-2xl font-bold mb-4">Chưa có phim yêu thích</h2>
           <p className="text-gray-400 mb-6 max-w-md mx-auto">
             Bạn chưa thêm phim nào vào danh sách yêu thích. Hãy khám phá và thêm phim từ trang danh sách!

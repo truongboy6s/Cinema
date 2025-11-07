@@ -6,11 +6,13 @@ import BlurCircle from '../components/BlurCircle';
 import MovieCard from '../components/MovieCard';
 import { useMovies } from '../contexts/MovieContext';
 import { useShowtimes } from '../contexts/ShowtimeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { getBackdropUrl } from '../utils/imageUtils';
 
 const MovieDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { movies, loading: moviesLoading } = useMovies();
   const { showtimes, loading: showtimesLoading } = useShowtimes();
   const [movie, setMovie] = useState(null);
@@ -27,8 +29,23 @@ const MovieDetail = () => {
       const selectedMovie = movies.find((m) => m._id === id);
       setMovie(selectedMovie || null);
       
-      if (selectedMovie) {
-        const favorites = JSON.parse(localStorage.getItem('yeuThichPhim')) || [];
+      if (selectedMovie && user) {
+        // Sử dụng userId để tạo key riêng cho mỗi user
+        const userFavoritesKey = `yeuThichPhim_${user._id || user.id}`;
+        let favorites = JSON.parse(localStorage.getItem(userFavoritesKey)) || [];
+        
+        // Migration: nếu chưa có dữ liệu cho user này, check dữ liệu cũ
+        if (favorites.length === 0) {
+          const oldFavorites = JSON.parse(localStorage.getItem('yeuThichPhim')) || [];
+          if (oldFavorites.length > 0) {
+            // Di chuyển dữ liệu cũ sang user hiện tại
+            localStorage.setItem(userFavoritesKey, JSON.stringify(oldFavorites));
+            // Xóa dữ liệu cũ
+            localStorage.removeItem('yeuThichPhim');
+            favorites = oldFavorites;
+          }
+        }
+        
         setIsFavorite(favorites.some(f => f._id === id));
         
         // Get related movies (same genre or random)
@@ -64,19 +81,32 @@ const MovieDetail = () => {
       
       setLoading(false);
     }
-  }, [id, movies, moviesLoading, showtimes, showtimesLoading]);
+  }, [id, movies, moviesLoading, showtimes, showtimesLoading, user]);
 
   // Toggle favorite
   const toggleFavorite = () => {
-    const favorites = JSON.parse(localStorage.getItem('yeuThichPhim')) || [];
+    if (!user) {
+      // Nếu chưa đăng nhập, chuyển đến trang đăng nhập
+      navigate('/login');
+      return;
+    }
+    
+    // Sử dụng userId để tạo key riêng cho mỗi user
+    const userFavoritesKey = `yeuThichPhim_${user._id || user.id}`;
+    const favorites = JSON.parse(localStorage.getItem(userFavoritesKey)) || [];
     let newFavorites;
+    
     if (isFavorite) {
       newFavorites = favorites.filter(f => f._id !== movie._id);
     } else {
       newFavorites = [...favorites, movie];
     }
-    localStorage.setItem('yeuThichPhim', JSON.stringify(newFavorites));
+    
+    localStorage.setItem(userFavoritesKey, JSON.stringify(newFavorites));
     setIsFavorite(!isFavorite);
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('favoritesUpdated'));
   };
 
   // Format date to Vietnamese
@@ -221,10 +251,14 @@ const MovieDetail = () => {
                 </button>
                 <button
                   onClick={toggleFavorite}
-                  className={`px-6 py-3 ${isFavorite ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-white/10 hover:bg-white/20'} text-white rounded-full shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2`}
+                  className={`px-6 py-3 ${
+                    !user ? 'bg-gray-600 hover:bg-gray-700' :
+                    isFavorite ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-white/10 hover:bg-white/20'
+                  } text-white rounded-full shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2`}
+                  title={!user ? 'Vui lòng đăng nhập để thêm vào yêu thích' : ''}
                 >
                   <Heart className="w-5 h-5" fill={isFavorite ? 'yellow' : 'none'} stroke="white" />
-                  {isFavorite ? 'Bỏ yêu thích' : 'Yêu thích'}
+                  {!user ? 'Đăng nhập để yêu thích' : isFavorite ? 'Bỏ yêu thích' : 'Yêu thích'}
                 </button>
               </div>
             </div>
@@ -283,50 +317,34 @@ const MovieDetail = () => {
               <h3 className="text-lg font-semibold text-white mb-4">
                 Suất chiếu ngày {formatDateVietnamese(selectedDate).day} {formatDateVietnamese(selectedDate).month}:
               </h3>
-              {currentShowtimes.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {currentShowtimes.map((showtime) => (
-                    <button
-                      key={showtime.id}
-                      onClick={() => {
-                        if (showtime.available) {
-                          navigate(`/movies/book/${movie._id}/${showtime.id}`, {
-                            state: {
-                              movie,
-                              showtime,
-                              selectedDate,
-                              selectedTime: showtime.time
-                            }
-                          });
-                        }
-                      }}
-                      disabled={!showtime.available}
-                      className={`p-4 rounded-lg border transition-all duration-300 text-left ${
-                        showtime.available
-                          ? 'bg-green-500/20 border-green-500/50 text-green-300 hover:bg-green-500/30 hover:border-green-500 hover:scale-105'
-                          : 'bg-gray-500/20 border-gray-500/50 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
-                      <div className="font-semibold text-lg">{showtime.time}</div>
-                      <div className="text-sm mt-1">{showtime.theater}</div>
-                      <div className="text-xs mt-1">{showtime.room}</div>
-                      <div className="text-sm mt-2 font-medium">
-                        {new Intl.NumberFormat('vi-VN', { 
-                          style: 'currency', 
-                          currency: 'VND' 
-                        }).format(showtime.price)}
-                      </div>
-                      <div className="text-xs mt-1">
-                        {showtime.available ? `Còn ${showtime.availableSeats} chỗ` : 'Hết chỗ'}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-400">Không có suất chiếu nào trong ngày này</p>
-                </div>
-              )}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                {currentShowtimes.map((showtime) => (
+                  <button
+                    key={showtime.id}
+                    onClick={() => {
+                      if (showtime.available) {
+                        navigate(`/movies/book/${movie._id}/${showtime.id}`, {
+                          state: {
+                            selectedDate,
+                            selectedTime: showtime.time
+                          }
+                        });
+                      }
+                    }}
+                    disabled={!showtime.available}
+                    className={`p-3 rounded-lg border transition-all duration-300 ${
+                      showtime.available
+                        ? 'bg-green-500/20 border-green-500/50 text-green-300 hover:bg-green-500/30 hover:border-green-500'
+                        : 'bg-gray-500/20 border-gray-500/50 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <div className="font-semibold">{showtime.time}</div>
+                    <div className="text-xs mt-1">
+                      {showtime.available ? 'Còn chỗ' : 'Hết chỗ'}
+                    </div>
+                  </button>
+                ))}
+              </div>
               
               <div className="mt-4 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
                 <p className="text-blue-300 text-sm">
