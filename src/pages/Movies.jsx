@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import MovieCard from '../components/MovieCard';
 import { useMovies } from '../contexts/MovieContext';
-import { 
-  Search, 
-  Filter, 
-  Grid3X3, 
-  List, 
+import {
+  Search,
+  Filter,
+  Grid3X3,
+  List,
   Calendar,
   Star,
   Clock,
@@ -20,7 +20,7 @@ import BlurCircle from '../components/BlurCircle';
 const Movies = () => {
   // Get movies from MongoDB via MovieContext
   const { movies, loading, error } = useMovies();
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [sortBy, setSortBy] = useState('latest');
@@ -36,7 +36,7 @@ const Movies = () => {
 
     // Search filter
     if (searchQuery) {
-      result = result.filter(movie => 
+      result = result.filter(movie =>
         movie.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         movie.genre?.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -44,7 +44,7 @@ const Movies = () => {
 
     // Genre filter
     if (selectedGenre !== 'all') {
-      result = result.filter(movie => 
+      result = result.filter(movie =>
         movie.genre?.toLowerCase().includes(selectedGenre.toLowerCase())
       );
     }
@@ -99,11 +99,11 @@ const Movies = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 pt-24 pb-12">
-      <BlurCircle top='150px' left='0px'/>
-      <BlurCircle bottom='50px' right='50px'/>
+      <BlurCircle top='150px' left='0px' />
+      <BlurCircle bottom='50px' right='50px' />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header Section */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-3 mb-4">
@@ -117,7 +117,7 @@ const Movies = () => {
           <p className="text-gray-400 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
             Khám phá những bộ phim mới nhất và hấp dẫn nhất đang được chiếu tại rạp
           </p>
-          
+
           {/* Stats */}
           <div className="flex items-center justify-center gap-8 mt-8 text-sm">
             <div className="flex items-center gap-2 text-gray-300">
@@ -137,10 +137,10 @@ const Movies = () => {
 
         {/* Filters & Search */}
         <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6 mb-8">
-          
+
           {/* Top Row */}
           <div className="flex flex-col lg:flex-row gap-4 mb-4">
-            
+
             {/* Search */}
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -174,7 +174,7 @@ const Movies = () => {
 
           {/* Filter Row */}
           <div className={`lg:flex items-center gap-4 ${showFilters ? 'flex flex-col lg:flex-row' : 'hidden lg:flex'}`}>
-            
+
             {/* Genre Filter */}
             <div className="flex-1">
               <label className="block text-gray-300 text-sm font-medium mb-2">Thể loại</label>
@@ -214,21 +214,19 @@ const Movies = () => {
               <div className="flex bg-white/5 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded transition-colors duration-300 ${
-                    viewMode === 'grid' 
-                      ? 'bg-red-500 text-white' 
+                  className={`p-2 rounded transition-colors duration-300 ${viewMode === 'grid'
+                      ? 'bg-red-500 text-white'
                       : 'text-gray-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Grid3X3 className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded transition-colors duration-300 ${
-                    viewMode === 'list' 
-                      ? 'bg-red-500 text-white' 
+                  className={`p-2 rounded transition-colors duration-300 ${viewMode === 'list'
+                      ? 'bg-red-500 text-white'
                       : 'text-gray-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <List className="w-5 h-5" />
                 </button>
@@ -263,27 +261,25 @@ const Movies = () => {
 
         {/* Movies Grid/List */}
         {filteredMovies.length > 0 ? (
-          <div className={`${
-            viewMode === 'grid' 
-              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' 
-              : 'flex flex-col gap-4'
-          } mb-12`}>
+          <div
+            className={`${viewMode === 'grid'
+                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch'
+                : 'flex flex-col gap-4'
+              } mb-12`}
+          >
             {filteredMovies.map((movie) => (
-              <div 
+              <div
                 key={movie._id}
-                className={`${
-                  viewMode === 'list' 
-                    ? 'transform transition-all duration-300 hover:scale-[1.02]' 
+                className={`${viewMode === 'list'
+                    ? 'transform transition-all duration-300 hover:scale-[1.02]'
                     : ''
-                }`}
+                  } h-full`}
               >
-                <MovieCard 
-                  movie={movie} 
-                  viewMode={viewMode}
-                />
+                <MovieCard movie={movie} viewMode={viewMode} />
               </div>
             ))}
           </div>
+
         ) : (
           <div className="text-center py-20">
             <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -291,7 +287,7 @@ const Movies = () => {
             </div>
             <h3 className="text-white text-2xl font-bold mb-4">Không tìm thấy phim nào</h3>
             <p className="text-gray-400 mb-8 max-w-md mx-auto">
-              Không có phim nào phù hợp với tiêu chí tìm kiếm của bạn. 
+              Không có phim nào phù hợp với tiêu chí tìm kiếm của bạn.
               Hãy thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm.
             </p>
             <button

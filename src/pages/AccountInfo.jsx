@@ -21,7 +21,7 @@ const AccountInfo = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: user?.name || '',
+    name: user?.fullName || '',
     email: user?.email || '',
     phone: user?.phone || '',
     dateOfBirth: user?.dateOfBirth || '',
@@ -58,7 +58,7 @@ const AccountInfo = () => {
 
   const handleCancel = () => {
     setFormData({
-      name: user?.name || '',
+      name: user?.fullName || '',
       email: user?.email || '',
       phone: user?.phone || '',
       dateOfBirth: user?.dateOfBirth || '',
@@ -91,7 +91,7 @@ const AccountInfo = () => {
               {/* Avatar */}
               <div className="relative group">
                 <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-bold text-2xl">
-                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                  {user?.fullName?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
                 <button className="absolute bottom-0 right-0 p-2 bg-gray-800 rounded-full text-white hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100">
                   <Camera className="w-4 h-4" />
@@ -101,7 +101,7 @@ const AccountInfo = () => {
               {/* User Basic Info */}
               <div className="text-center sm:text-left">
                 <h2 className="text-2xl font-bold text-white mb-2">
-                  {user?.name || 'Người dùng'}
+                  {user?.fullName || 'Người dùng'}
                 </h2>
                 <p className="text-cyan-400 mb-1">{user?.email}</p>
                 <p className="text-gray-400">
@@ -162,7 +162,7 @@ const AccountInfo = () => {
                   />
                 ) : (
                   <div className="px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white">
-                    {user?.name || 'Chưa cập nhật'}
+                    {user?.fullName || 'Chưa cập nhật'}
                   </div>
                 )}
               </div>
