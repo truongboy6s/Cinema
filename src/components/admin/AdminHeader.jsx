@@ -25,7 +25,7 @@ const AdminHeader = ({ sidebarOpen, setSidebarOpen, user }) => {
   };
 
   return (
-    <header className="bg-slate-900/50 backdrop-blur-xl border-b border-cyan-500/20 px-6 py-4">
+    <header className="bg-slate-900/50 backdrop-blur-xl border-b border-cyan-500/20 px-6 py-4 z-[9998]">
       <div className="flex items-center justify-between">
         
         {/* Left Side */}
@@ -87,7 +87,7 @@ const AdminHeader = ({ sidebarOpen, setSidebarOpen, user }) => {
 
             {/* User Dropdown */}
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-slate-800 rounded-lg shadow-xl border border-gray-600 py-2 z-50">
+              <div className="absolute right-0 mt-2 w-48 bg-slate-800 rounded-lg shadow-xl border border-gray-600 py-2 z-50" onMouseLeave={() => setShowUserMenu(false)} >
                 <div className="px-4 py-2 border-b border-gray-600">
                   <p className="text-white text-sm font-medium">{user?.fullName || 'Admin'}</p>
                   <p className="text-gray-400 text-xs">{user?.email || 'admin@cinema.com'}</p>

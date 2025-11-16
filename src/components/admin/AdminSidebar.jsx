@@ -24,7 +24,6 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
     { icon: Calendar, label: 'Lịch chiếu', path: '/admin/showtimes' },
     { icon: CreditCard, label: 'Đặt vé', path: '/admin/bookings' },
     { icon: BarChart3, label: 'Thống kê', path: '/admin/analytics' },
-    { icon: Shield, label: 'Bảo mật', path: '/admin/security' },
     { icon: Settings, label: 'Cài đặt', path: '/admin/settings' }
   ];
 

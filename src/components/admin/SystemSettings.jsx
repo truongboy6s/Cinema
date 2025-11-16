@@ -11,47 +11,7 @@ const SystemSettings = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* General Settings */}
-        <div className="glass-card rounded-xl p-6 border border-gray-700">
-          <div className="flex items-center mb-6">
-            <SettingsIcon className="w-6 h-6 text-cyan-400 mr-3" />
-            <h2 className="text-xl font-bold text-white">Cài đặt chung</h2>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Tên rạp phim
-              </label>
-              <input
-                type="text"
-                defaultValue="CineMax Cinema"
-                className="w-full px-4 py-2 bg-slate-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Địa chỉ
-              </label>
-              <textarea
-                defaultValue="123 Đường ABC, Quận XYZ, TP. Hồ Chí Minh"
-                rows="3"
-                className="w-full px-4 py-2 bg-slate-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Số điện thoại liên hệ
-              </label>
-              <input
-                type="tel"
-                defaultValue="0123-456-789"
-                className="w-full px-4 py-2 bg-slate-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-500"
-              />
-            </div>
-          </div>
-        </div>
+        
 
         {/* Notification Settings */}
         <div className="glass-card rounded-xl p-6 border border-gray-700">
