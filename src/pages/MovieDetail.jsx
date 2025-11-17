@@ -35,12 +35,12 @@ const MovieDetail = () => {
     if (!moviesLoading && movies.length > 0 && !showtimesLoading) {
       const selectedMovie = movies.find((m) => m._id === id);
       setMovie(selectedMovie || null);
-      
+
       if (selectedMovie && user) {
         // Sử dụng userId để tạo key riêng cho mỗi user
         const userFavoritesKey = `yeuThichPhim_${user._id || user.id}`;
         let favorites = JSON.parse(localStorage.getItem(userFavoritesKey)) || [];
-        
+
         // Migration: nếu chưa có dữ liệu cho user này, check dữ liệu cũ
         if (favorites.length === 0) {
           const oldFavorites = JSON.parse(localStorage.getItem('yeuThichPhim')) || [];
@@ -52,40 +52,35 @@ const MovieDetail = () => {
             favorites = oldFavorites;
           }
         }
-        
+
         setIsFavorite(favorites.some(f => f._id === id));
-        
+
         // Get related movies (same genre or random)
         const related = movies.filter(m => m._id !== id).slice(0, 4);
         setRelatedMovies(related);
-        
+
         // Get showtimes for this movie
-        const movieShowtimesList = showtimes.filter(showtime => 
+        const movieShowtimesList = showtimes.filter(showtime =>
           showtime.movieId === id || showtime.movieId?._id === id
         );
         setMovieShowtimes(movieShowtimesList);
-        
+
         // Get unique dates from showtimes
-        const uniqueDates = [...new Set(movieShowtimesList.map(st => st.date))];
-        const dateObjects = uniqueDates.map(dateStr => new Date(dateStr)).sort((a, b) => a - b);
-        
-        // If no showtimes, generate next 7 days as available
-        if (dateObjects.length === 0) {
-          const dates = [];
-          const today = new Date();
-          for (let i = 0; i < 7; i++) {
-            const date = new Date(today);
-            date.setDate(today.getDate() + i);
-            dates.push(date);
-          }
-          setAvailableDates(dates);
-          setSelectedDate(dates[0]);
-        } else {
-          setAvailableDates(dateObjects);
-          setSelectedDate(dateObjects[0]);
+        const dates = [];
+        const today = new Date();
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() + i);
+          dates.push(date);
         }
+
+        setAvailableDates(dates);
+        setSelectedDate(dates[0]);
+
+        // Still load showtimes normally
+        setMovieShowtimes(movieShowtimesList);
       }
-      
+
       setLoading(false);
     }
   }, [id, movies, moviesLoading, showtimes, showtimesLoading, user]);
@@ -97,21 +92,21 @@ const MovieDetail = () => {
       navigate('/login');
       return;
     }
-    
+
     // Sử dụng userId để tạo key riêng cho mỗi user
     const userFavoritesKey = `yeuThichPhim_${user._id || user.id}`;
     const favorites = JSON.parse(localStorage.getItem(userFavoritesKey)) || [];
     let newFavorites;
-    
+
     if (isFavorite) {
       newFavorites = favorites.filter(f => f._id !== movie._id);
     } else {
       newFavorites = [...favorites, movie];
     }
-    
+
     localStorage.setItem(userFavoritesKey, JSON.stringify(newFavorites));
     setIsFavorite(!isFavorite);
-    
+
     // Dispatch custom event to notify other components
     window.dispatchEvent(new CustomEvent('favoritesUpdated'));
   };
@@ -119,13 +114,13 @@ const MovieDetail = () => {
   // Format date to Vietnamese
   const formatDateVietnamese = (date) => {
     const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-    const months = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 
-                   'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
-    
+    const months = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+      'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+
     const dayName = days[date.getDay()];
     const day = date.getDate();
     const month = months[date.getMonth()];
-    
+
     return {
       dayName: dayName,
       day: day,
